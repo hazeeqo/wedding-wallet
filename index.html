@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#101828">
+    <title>Wedding Wallet</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="splash" class="splash">
+        <div class="splash-mark">WW</div>
+        <div>
+            <h1>Wedding Wallet</h1>
+            <p>Loading your plans...</p>
+        </div>
+    </div>
+
+    <main id="app" class="app hidden">
+        <header class="app-header">
+            <div>
+                <p class="eyebrow">Aiman & Partner</p>
+                <h1>Wedding Wallet</h1>
+            </div>
+            <button id="quickAddPayment" class="icon-button" type="button" title="Add payment">+</button>
+        </header>
+
+        <section class="summary-panel">
+            <div class="summary-top">
+                <div>
+                    <span>Total remaining</span>
+                    <strong id="totalRemaining">RM 0</strong>
+                </div>
+                <div class="pill" id="paidPercent">0% paid</div>
+            </div>
+            <div class="progress-track">
+                <div id="overallProgress" class="progress-fill"></div>
+            </div>
+            <div class="summary-grid">
+                <div>
+                    <span>Quoted</span>
+                    <strong id="totalQuoted">RM 0</strong>
+                </div>
+                <div>
+                    <span>Paid</span>
+                    <strong id="totalPaid">RM 0</strong>
+                </div>
+                <div>
+                    <span>Savings</span>
+                    <strong id="savingsSaved">RM 0</strong>
+                </div>
+            </div>
+        </section>
+
+        <nav class="tabs" aria-label="App sections">
+            <button class="tab active" type="button" data-screen="vendorsScreen">Vendors</button>
+            <button class="tab" type="button" data-screen="paymentsScreen">Payments</button>
+            <button class="tab" type="button" data-screen="savingsScreen">Savings</button>
+        </nav>
+
+        <section id="vendorsScreen" class="screen active">
+            <div class="section-head">
+                <div>
+                    <h2>Vendors</h2>
+                    <p id="vendorCount">0 vendors</p>
+                </div>
+                <button id="addVendorButton" class="primary-button" type="button">Add vendor</button>
+            </div>
+            <div class="filter-row">
+                <input id="vendorSearch" type="search" placeholder="Search vendor or category">
+                <select id="categoryFilter">
+                    <option value="all">All</option>
+                    <option>Venue</option>
+                    <option>Catering</option>
+                    <option>Photography</option>
+                    <option>Decoration</option>
+                    <option>Outfit</option>
+                    <option>Makeup</option>
+                    <option>Entertainment</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div id="vendorList" class="list"></div>
+        </section>
+
+        <section id="paymentsScreen" class="screen">
+            <div class="section-head">
+                <div>
+                    <h2>Payments</h2>
+                    <p>Receipts and history</p>
+                </div>
+                <button id="addPaymentButton" class="primary-button" type="button">Pay</button>
+            </div>
+            <div id="paymentList" class="list"></div>
+        </section>
+
+        <section id="savingsScreen" class="screen">
+            <div class="section-head">
+                <div>
+                    <h2>Savings</h2>
+                    <p>Track money set aside</p>
+                </div>
+            </div>
+            <form id="savingsForm" class="form-card">
+                <label>
+                    Goal amount
+                    <input id="savingsGoal" type="number" min="0" step="0.01" placeholder="RM 20000">
+                </label>
+                <label>
+                    Current saved
+                    <input id="savingsCurrent" type="number" min="0" step="0.01" placeholder="RM 5000">
+                </label>
+                <label>
+                    Monthly target
+                    <input id="monthlyTarget" type="number" min="0" step="0.01" placeholder="RM 1500">
+                </label>
+                <button class="primary-button full" type="submit">Save target</button>
+            </form>
+            <div class="savings-card">
+                <div class="summary-top">
+                    <div>
+                        <span>Still needed</span>
+                        <strong id="savingsRemaining">RM 0</strong>
+                    </div>
+                    <div class="pill" id="savingsPercent">0%</div>
+                </div>
+                <div class="progress-track">
+                    <div id="savingsProgress" class="progress-fill savings"></div>
+                </div>
+                <p id="savingsHint">Set a savings goal to start tracking.</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="vendorModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="vendorModalTitle">
+        <form id="vendorForm" class="modal-sheet">
+            <div class="modal-head">
+                <h2 id="vendorModalTitle">Add vendor</h2>
+                <button class="ghost-button" type="button" data-close="vendorModal">Close</button>
+            </div>
+            <input id="vendorId" type="hidden">
+            <label>
+                Vendor name
+                <input id="vendorName" required placeholder="Venue Hall">
+            </label>
+            <label>
+                Category
+                <select id="vendorCategory">
+                    <option>Venue</option>
+                    <option>Catering</option>
+                    <option>Photography</option>
+                    <option>Decoration</option>
+                    <option>Outfit</option>
+                    <option>Makeup</option>
+                    <option>Entertainment</option>
+                    <option>Other</option>
+                </select>
+            </label>
+            <label>
+                Quote amount
+                <input id="vendorQuote" required type="number" min="0" step="0.01" placeholder="RM 0">
+            </label>
+            <label>
+                Due date
+                <input id="vendorDueDate" type="date">
+            </label>
+            <label>
+                Invoice or quote file
+                <input id="invoiceFile" type="file" accept="image/*,.pdf">
+            </label>
+            <label>
+                Notes
+                <textarea id="vendorNotes" rows="3" placeholder="Package details, contact, or bank info"></textarea>
+            </label>
+            <button class="primary-button full" type="submit">Save vendor</button>
+        </form>
+    </div>
+
+    <div id="paymentModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+        <form id="paymentForm" class="modal-sheet">
+            <div class="modal-head">
+                <h2 id="paymentModalTitle">Record payment</h2>
+                <button class="ghost-button" type="button" data-close="paymentModal">Close</button>
+            </div>
+            <label>
+                Vendor
+                <select id="paymentVendor" required></select>
+            </label>
+            <label>
+                Amount paid
+                <input id="paymentAmount" required type="number" min="0" step="0.01" placeholder="RM 0">
+            </label>
+            <label>
+                Payment date
+                <input id="paymentDate" type="date">
+            </label>
+            <label>
+                Method
+                <select id="paymentMethod">
+                    <option>Bank transfer</option>
+                    <option>Cash</option>
+                    <option>Card</option>
+                    <option>E-wallet</option>
+                    <option>Other</option>
+                </select>
+            </label>
+            <label>
+                Receipt file
+                <input id="receiptFile" type="file" accept="image/*,.pdf">
+            </label>
+            <label>
+                Note
+                <textarea id="paymentNote" rows="2" placeholder="Deposit, second payment, balance, etc."></textarea>
+            </label>
+            <button class="primary-button full" type="submit">Save payment</button>
+        </form>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
