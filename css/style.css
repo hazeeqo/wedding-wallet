@@ -1,564 +1,624 @@
-const state = {
-    vendors: [],
-    payments: [],
-    savings: {
-        goal: 0,
-        current: 0,
-        monthlyTarget: 0
-    },
-    search: "",
-    category: "all"
-};
-
-let firebase = null;
-
-const money = new Intl.NumberFormat("en-MY", {
-    style: "currency",
-    currency: "MYR",
-    maximumFractionDigits: 0
-});
-
-const els = {};
-
-function initializeAppUi() {
-    cacheElements();
-    bindEvents();
-    setToday();
-    startSplash();
-    subscribeToData();
+:root {
+    color-scheme: light;
+    --ink: #101828;
+    --muted: #667085;
+    --line: #e4e7ec;
+    --surface: #ffffff;
+    --bg: #f3f6f8;
+    --navy: #152238;
+    --teal: #117a7a;
+    --rose: #c9435c;
+    --amber: #c57a16;
+    --green: #23845f;
+    --shadow: 0 16px 40px rgba(16, 24, 40, .12);
 }
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeAppUi);
-} else {
-    initializeAppUi();
+* {
+    box-sizing: border-box;
 }
 
-function cacheElements() {
-    [
-        "app",
-        "splash",
-        "totalRemaining",
-        "paidPercent",
-        "overallProgress",
-        "totalQuoted",
-        "totalPaid",
-        "savingsSaved",
-        "vendorCount",
-        "vendorSearch",
-        "categoryFilter",
-        "vendorList",
-        "paymentList",
-        "vendorModal",
-        "vendorForm",
-        "vendorId",
-        "vendorName",
-        "vendorCategory",
-        "vendorQuote",
-        "vendorDueDate",
-        "invoiceFile",
-        "vendorNotes",
-        "paymentModal",
-        "paymentForm",
-        "paymentVendor",
-        "paymentAmount",
-        "paymentDate",
-        "paymentMethod",
-        "receiptFile",
-        "paymentNote",
-        "savingsForm",
-        "savingsGoal",
-        "savingsCurrent",
-        "monthlyTarget",
-        "savingsRemaining",
-        "savingsPercent",
-        "savingsProgress",
-        "savingsHint",
-        "toast"
-    ].forEach((id) => {
-        els[id] = document.getElementById(id);
-    });
+html {
+    min-height: 100%;
+    background: var(--bg);
 }
 
-function bindEvents() {
-    document.querySelectorAll(".tab").forEach((tab) => {
-        tab.addEventListener("click", () => switchScreen(tab.dataset.screen));
-    });
-
-    document.getElementById("addVendorButton").addEventListener("click", () => openVendorModal());
-    document.getElementById("addPaymentButton").addEventListener("click", () => openPaymentModal());
-    document.getElementById("quickAddPayment").addEventListener("click", () => openPaymentModal());
-
-    document.querySelectorAll("[data-close]").forEach((button) => {
-        button.addEventListener("click", () => closeModal(button.dataset.close));
-    });
-
-    els.vendorSearch.addEventListener("input", () => {
-        state.search = els.vendorSearch.value.trim().toLowerCase();
-        render();
-    });
-
-    els.categoryFilter.addEventListener("change", () => {
-        state.category = els.categoryFilter.value;
-        render();
-    });
-
-    els.vendorForm.addEventListener("submit", saveVendor);
-    els.paymentForm.addEventListener("submit", savePayment);
-    els.savingsForm.addEventListener("submit", saveSavings);
-
-    els.vendorList.addEventListener("click", handleVendorAction);
-    els.paymentList.addEventListener("click", handlePaymentAction);
-
-    document.querySelectorAll(".modal").forEach((modal) => {
-        modal.addEventListener("click", (event) => {
-            if (event.target === modal) closeModal(modal.id);
-        });
-    });
+body {
+    min-height: 100%;
+    margin: 0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    color: var(--ink);
+    background:
+        linear-gradient(180deg, #ecf2f3 0, #f7f8fa 34%, #eef3f1 100%);
 }
 
-function setToday() {
-    els.paymentDate.value = new Date().toISOString().slice(0, 10);
+button,
+input,
+select,
+textarea {
+    font: inherit;
 }
 
-function startSplash() {
-    window.setTimeout(() => {
-        els.splash.classList.add("hide");
-        window.setTimeout(() => {
-            els.splash.remove();
-            els.app.classList.remove("hidden");
-        }, 300);
-    }, 700);
+button {
+    cursor: pointer;
 }
 
-async function subscribeToData() {
-    try {
-        firebase = await import("./firebase.js");
-    } catch (error) {
-        showToast("Firebase could not load. Check your connection.");
-        return;
+.hidden {
+    display: none !important;
+}
+
+.splash {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    gap: 18px;
+    align-content: center;
+    padding: 24px;
+    color: white;
+    text-align: center;
+    background: radial-gradient(circle at top, #25515a, #101828 64%);
+    transition: opacity .3s ease, transform .3s ease;
+}
+
+.splash.hide {
+    opacity: 0;
+    transform: scale(1.02);
+}
+
+.splash-mark {
+    display: grid;
+    place-items: center;
+    width: 142px;
+    height: 142px;
+    border: 1px solid rgba(255, 255, 255, .44);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .1);
+    font-family: WeddingScript, "Brush Script MT", cursive;
+    font-size: 58px;
+    font-weight: 500;
+    line-height: 1;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .24), inset 0 0 34px rgba(255, 255, 255, .08);
+    animation: floatIn .8s ease both;
+}
+
+.splash h1,
+.splash p {
+    margin: 0;
+}
+
+.app {
+    width: min(100%, 520px);
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 18px 16px 34px;
+}
+
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0 12px;
+    background: linear-gradient(180deg, rgba(243, 246, 248, .98), rgba(243, 246, 248, .86));
+    backdrop-filter: blur(18px);
+}
+.splash-copy {
+    position: relative;
+    display: grid;
+    gap: 8px;
+    animation: fadeUp .9s ease .16s both;
+}
+
+.splash-kicker {
+    color: rgba(255, 255, 255, .72);
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.splash h1 {
+    font-family: WeddingScript, "Brush Script MT", cursive;
+    font-size: 44px;
+    font-weight: 500;
+}
+
+.splash-quote {
+    max-width: 280px;
+    color: rgba(255, 255, 255, .82);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.eyebrow,
+.section-head p,
+.summary-panel span,
+.summary-grid span,
+label,
+.meta,
+.empty-state {
+    color: var(--muted);
+}
+
+.eyebrow {
+    margin: 0 0 2px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+    margin-top: 0;
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.05;
+}
+
+.icon-button {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 14px;
+    color: white;
+    background: var(--navy);
+    font-size: 26px;
+    line-height: 1;
+    box-shadow: var(--shadow);
+}
+
+.summary-panel,
+.savings-card,
+.form-card,
+.vendor-card,
+.payment-card {
+    border: 1px solid rgba(16, 24, 40, .08);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgba(16, 24, 40, .08);
+}
+
+.summary-panel {
+    padding: 18px;
+    color: white;
+    background:
+        linear-gradient(145deg, rgba(17, 122, 122, .92), rgba(21, 34, 56, .98)),
+        var(--navy);
+}
+
+.summary-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.summary-top span,
+.summary-panel .summary-grid span {
+    display: block;
+    color: rgba(255, 255, 255, .72);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.summary-top strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 32px;
+    line-height: 1;
+}
+
+.pill {
+    flex: 0 0 auto;
+    max-width: 112px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    color: white;
+    background: rgba(255, 255, 255, .16);
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.progress-track {
+    height: 10px;
+    margin: 18px 0;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .18);
+}
+
+.progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #f2c078, #6bd2b0);
+    transition: width .25s ease;
+}
+
+.progress-fill.savings {
+    background: linear-gradient(90deg, var(--teal), var(--green));
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.summary-grid strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 15px;
+}
+
+.tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 16px 0;
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .7);
+}
+
+.tab {
+    min-height: 40px;
+    border: 0;
+    border-radius: 6px;
+    color: var(--muted);
+    background: transparent;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.tab.active {
+    color: var(--ink);
+    background: white;
+    box-shadow: 0 5px 16px rgba(16, 24, 40, .08);
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 10px 0 12px;
+}
+
+.section-head h2 {
+    margin: 0 0 3px;
+    font-size: 20px;
+}
+
+.section-head p {
+    margin: 0;
+    font-size: 13px;
+}
+
+.primary-button,
+.ghost-button,
+.danger-button {
+    min-height: 42px;
+    border-radius: 8px;
+    padding: 0 14px;
+    font-weight: 800;
+}
+
+.primary-button {
+    border: 0;
+    color: white;
+    background: var(--teal);
+}
+
+.ghost-button {
+    border: 1px solid var(--line);
+    color: var(--ink);
+    background: white;
+}
+
+.danger-button {
+    border: 0;
+    color: white;
+    background: var(--rose);
+}
+
+.full {
+    width: 100%;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: 1fr 132px;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--ink);
+    background: white;
+    outline: none;
+}
+
+textarea {
+    resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(17, 122, 122, .12);
+}
+
+.list {
+    display: grid;
+    gap: 10px;
+}
+
+.vendor-card,
+.payment-card,
+.form-card,
+.savings-card {
+    padding: 14px;
+}
+
+.card-head,
+.money-row,
+.action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.vendor-name {
+    margin: 0 0 4px;
+    font-size: 17px;
+}
+
+.category {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    color: var(--teal);
+    background: #e7f4f1;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.balance {
+    text-align: right;
+}
+
+.balance span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.balance strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--rose);
+    font-size: 18px;
+}
+
+.money-row {
+    margin: 12px 0;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.money-row div {
+    min-width: 0;
+}
+
+.money-row span,
+.meta {
+    display: block;
+    font-size: 12px;
+}
+
+.money-row strong {
+    display: block;
+    margin-top: 3px;
+    font-size: 15px;
+}
+
+.notes {
+    margin: 0 0 10px;
+    color: #475467;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.action-row {
+    align-items: stretch;
+}
+
+.action-row button,
+.action-row a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border-radius: 8px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    background: white;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.payment-card h3 {
+    margin: 0 0 3px;
+    font-size: 16px;
+}
+
+.payment-card .amount {
+    color: var(--green);
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.empty-state {
+    padding: 24px 14px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .65);
+    text-align: center;
+}
+
+.form-card {
+    display: grid;
+    gap: 12px;
+}
+
+label {
+    display: grid;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.savings-card {
+    margin-top: 12px;
+}
+
+.savings-card .summary-top span {
+    color: var(--muted);
+}
+
+.savings-card .summary-top strong {
+    color: var(--ink);
+}
+
+.savings-card .pill {
+    color: var(--teal);
+    background: #e7f4f1;
+}
+
+#savingsHint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    display: grid;
+    align-items: end;
+    padding: 14px;
+    background: rgba(16, 24, 40, .38);
+}
+
+.modal-sheet {
+    display: grid;
+    gap: 12px;
+    width: min(100%, 520px);
+    max-height: calc(100vh - 32px);
+    margin: 0 auto;
+    overflow: auto;
+    padding: 16px;
+    border-radius: 14px 14px 8px 8px;
+    background: white;
+    box-shadow: var(--shadow);
+}
+
+.modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.modal-head h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.toast {
+    position: fixed;
+    right: 16px;
+    bottom: 18px;
+    left: 16px;
+    z-index: 30;
+    width: min(488px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 13px 14px;
+    border-radius: 8px;
+    color: white;
+    background: var(--ink);
+    box-shadow: var(--shadow);
+    font-weight: 800;
+}
+
+@media (min-width: 680px) {
+    .app {
+        padding-top: 26px;
     }
 
-    firebase.onSnapshot(firebase.collection(firebase.db, "vendors"), (snapshot) => {
-        state.vendors = snapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data()
-        }));
-        state.vendors.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-        render();
-    });
-
-    firebase.onSnapshot(firebase.collection(firebase.db, "payments"), (snapshot) => {
-        state.payments = snapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data()
-        }));
-        state.payments.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
-        render();
-    });
-
-    firebase.onSnapshot(firebase.doc(firebase.db, "settings", "savings"), (snapshot) => {
-        if (snapshot.exists()) {
-            state.savings = {
-                goal: Number(snapshot.data().goal || 0),
-                current: Number(snapshot.data().current || 0),
-                monthlyTarget: Number(snapshot.data().monthlyTarget || 0)
-            };
-            fillSavingsForm();
-            render();
-        }
-    });
-}
-
-function switchScreen(id) {
-    document.querySelectorAll(".screen").forEach((screen) => {
-        screen.classList.toggle("active", screen.id === id);
-    });
-    document.querySelectorAll(".tab").forEach((tab) => {
-        tab.classList.toggle("active", tab.dataset.screen === id);
-    });
-}
-
-function render() {
-    renderSummary();
-    renderVendors();
-    renderPayments();
-    renderSavings();
-    fillPaymentVendorOptions();
-}
-
-function getPaidByVendor() {
-    return state.payments.reduce((totals, payment) => {
-        const vendorId = payment.vendorId;
-        totals[vendorId] = (totals[vendorId] || 0) + Number(payment.amount || 0);
-        return totals;
-    }, {});
-}
-
-function getVendorById(id) {
-    return state.vendors.find((vendor) => vendor.id === id);
-}
-
-function renderSummary() {
-    const paidByVendor = getPaidByVendor();
-    const quoted = state.vendors.reduce((sum, vendor) => sum + Number(vendor.quote || 0), 0);
-    const paid = Object.values(paidByVendor).reduce((sum, value) => sum + value, 0);
-    const remaining = Math.max(quoted - paid, 0);
-    const percent = quoted > 0 ? Math.min((paid / quoted) * 100, 100) : 0;
-
-    els.totalQuoted.textContent = formatMoney(quoted);
-    els.totalPaid.textContent = formatMoney(paid);
-    els.totalRemaining.textContent = formatMoney(remaining);
-    els.savingsSaved.textContent = formatMoney(state.savings.current);
-    els.paidPercent.textContent = `${Math.round(percent)}% paid`;
-    els.overallProgress.style.width = `${percent}%`;
-}
-
-function renderVendors() {
-    const paidByVendor = getPaidByVendor();
-    const filtered = state.vendors.filter((vendor) => {
-        const matchesCategory = state.category === "all" || vendor.category === state.category;
-        const haystack = `${vendor.name || ""} ${vendor.category || ""} ${vendor.notes || ""}`.toLowerCase();
-        return matchesCategory && haystack.includes(state.search);
-    });
-
-    els.vendorCount.textContent = `${filtered.length} vendor${filtered.length === 1 ? "" : "s"}`;
-
-    if (!filtered.length) {
-        els.vendorList.innerHTML = `<div class="empty-state">Add your first vendor quote to start tracking balances.</div>`;
-        return;
+    .modal {
+        align-items: center;
     }
 
-    els.vendorList.innerHTML = filtered.map((vendor) => {
-        const quote = Number(vendor.quote || 0);
-        const paid = Number(paidByVendor[vendor.id] || 0);
-        const remaining = Math.max(quote - paid, 0);
-        const percent = quote > 0 ? Math.min((paid / quote) * 100, 100) : 0;
-        const invoiceLink = vendor.invoiceUrl
-            ? `<a href="${escapeAttr(vendor.invoiceUrl)}" target="_blank" rel="noopener">Invoice</a>`
-            : "";
-
-        return `
-            <article class="vendor-card">
-                <div class="card-head">
-                    <div>
-                        <h3 class="vendor-name">${escapeHtml(vendor.name || "Untitled vendor")}</h3>
-                        <span class="category">${escapeHtml(vendor.category || "Other")}</span>
-                    </div>
-                    <div class="balance">
-                        <span>Balance</span>
-                        <strong>${formatMoney(remaining)}</strong>
-                    </div>
-                </div>
-                <div class="money-row">
-                    <div><span>Quote</span><strong>${formatMoney(quote)}</strong></div>
-                    <div><span>Paid</span><strong>${formatMoney(paid)}</strong></div>
-                    <div><span>Progress</span><strong>${Math.round(percent)}%</strong></div>
-                </div>
-                ${vendor.dueDate ? `<span class="meta">Due ${formatDate(vendor.dueDate)}</span>` : ""}
-                ${vendor.notes ? `<p class="notes">${escapeHtml(vendor.notes)}</p>` : ""}
-                <div class="action-row">
-                    <button type="button" data-action="pay" data-id="${vendor.id}">Pay</button>
-                    <button type="button" data-action="edit" data-id="${vendor.id}">Edit</button>
-                    ${invoiceLink}
-                    <button type="button" data-action="delete" data-id="${vendor.id}">Delete</button>
-                </div>
-            </article>
-        `;
-    }).join("");
-}
-
-function renderPayments() {
-    if (!state.payments.length) {
-        els.paymentList.innerHTML = `<div class="empty-state">Payments and receipts will appear here.</div>`;
-        return;
-    }
-
-    els.paymentList.innerHTML = state.payments.map((payment) => {
-        const vendor = getVendorById(payment.vendorId);
-        const receiptLink = payment.receiptUrl
-            ? `<a href="${escapeAttr(payment.receiptUrl)}" target="_blank" rel="noopener">Receipt</a>`
-            : "";
-
-        return `
-            <article class="payment-card">
-                <div class="card-head">
-                    <div>
-                        <h3>${escapeHtml(vendor?.name || "Vendor removed")}</h3>
-                        <span class="meta">${formatDate(payment.date)} - ${escapeHtml(payment.method || "Payment")}</span>
-                    </div>
-                    <div class="amount">${formatMoney(payment.amount || 0)}</div>
-                </div>
-                ${payment.note ? `<p class="notes">${escapeHtml(payment.note)}</p>` : ""}
-                <div class="action-row">
-                    ${receiptLink}
-                    <button type="button" data-action="delete-payment" data-id="${payment.id}">Delete</button>
-                </div>
-            </article>
-        `;
-    }).join("");
-}
-
-function renderSavings() {
-    const goal = Number(state.savings.goal || 0);
-    const current = Number(state.savings.current || 0);
-    const monthly = Number(state.savings.monthlyTarget || 0);
-    const remaining = Math.max(goal - current, 0);
-    const percent = goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
-
-    els.savingsRemaining.textContent = formatMoney(remaining);
-    els.savingsPercent.textContent = `${Math.round(percent)}%`;
-    els.savingsProgress.style.width = `${percent}%`;
-
-    if (!goal) {
-        els.savingsHint.textContent = "Set a savings goal to start tracking.";
-    } else if (remaining === 0) {
-        els.savingsHint.textContent = "Savings goal completed.";
-    } else if (monthly > 0) {
-        const months = Math.ceil(remaining / monthly);
-        els.savingsHint.textContent = `${months} month${months === 1 ? "" : "s"} left at ${formatMoney(monthly)} per month.`;
-    } else {
-        els.savingsHint.textContent = "Add a monthly target to estimate your timeline.";
+    .modal-sheet {
+        border-radius: 8px;
     }
 }
 
-function fillSavingsForm() {
-    els.savingsGoal.value = state.savings.goal || "";
-    els.savingsCurrent.value = state.savings.current || "";
-    els.monthlyTarget.value = state.savings.monthlyTarget || "";
-}
-
-function fillPaymentVendorOptions(selectedId = "") {
-    const current = selectedId || els.paymentVendor.value;
-    els.paymentVendor.innerHTML = state.vendors.map((vendor) => (
-        `<option value="${vendor.id}">${escapeHtml(vendor.name || "Untitled vendor")}</option>`
-    )).join("");
-
-    if (current && state.vendors.some((vendor) => vendor.id === current)) {
-        els.paymentVendor.value = current;
-    }
-}
-
-async function saveVendor(event) {
-    event.preventDefault();
-    if (!ensureFirebaseReady()) return;
-
-    const id = els.vendorId.value;
-    const file = els.invoiceFile.files[0];
-
-    setBusy(els.vendorForm, true);
-
-    try {
-        const data = {
-            name: els.vendorName.value.trim(),
-            category: els.vendorCategory.value,
-            quote: Number(els.vendorQuote.value || 0),
-            dueDate: els.vendorDueDate.value,
-            notes: els.vendorNotes.value.trim(),
-            updatedAt: firebase.serverTimestamp()
-        };
-
-        if (file) {
-            const upload = await uploadFile(file, `invoices/${Date.now()}-${cleanFileName(file.name)}`);
-            data.invoiceUrl = upload.url;
-            data.invoiceName = file.name;
-        }
-
-        if (id) {
-            await firebase.updateDoc(firebase.doc(firebase.db, "vendors", id), data);
-            showToast("Vendor updated");
-        } else {
-            await firebase.addDoc(firebase.collection(firebase.db, "vendors"), {
-                ...data,
-                createdAt: firebase.serverTimestamp()
-            });
-            showToast("Vendor added");
-        }
-
-        closeModal("vendorModal");
-        els.vendorForm.reset();
-        els.vendorId.value = "";
-    } catch (error) {
-        showToast(error.message || "Could not save vendor");
-    } finally {
-        setBusy(els.vendorForm, false);
-    }
-}
-
-async function savePayment(event) {
-    event.preventDefault();
-    if (!ensureFirebaseReady()) return;
-
-    if (!state.vendors.length) {
-        showToast("Add a vendor first");
-        return;
+@media (max-width: 390px) {
+    .summary-top strong {
+        font-size: 27px;
     }
 
-    const file = els.receiptFile.files[0];
-    setBusy(els.paymentForm, true);
-
-    try {
-        const data = {
-            vendorId: els.paymentVendor.value,
-            amount: Number(els.paymentAmount.value || 0),
-            date: els.paymentDate.value || new Date().toISOString().slice(0, 10),
-            method: els.paymentMethod.value,
-            note: els.paymentNote.value.trim(),
-            createdAt: firebase.serverTimestamp()
-        };
-
-        if (file) {
-            const upload = await uploadFile(file, `receipts/${Date.now()}-${cleanFileName(file.name)}`);
-            data.receiptUrl = upload.url;
-            data.receiptName = file.name;
-        }
-
-        await firebase.addDoc(firebase.collection(firebase.db, "payments"), data);
-        closeModal("paymentModal");
-        els.paymentForm.reset();
-        setToday();
-        showToast("Payment saved");
-    } catch (error) {
-        showToast(error.message || "Could not save payment");
-    } finally {
-        setBusy(els.paymentForm, false);
-    }
-}
-
-async function saveSavings(event) {
-    event.preventDefault();
-    if (!ensureFirebaseReady()) return;
-
-    const data = {
-        goal: Number(els.savingsGoal.value || 0),
-        current: Number(els.savingsCurrent.value || 0),
-        monthlyTarget: Number(els.monthlyTarget.value || 0),
-        updatedAt: firebase.serverTimestamp()
-    };
-
-    await firebase.setDoc(firebase.doc(firebase.db, "settings", "savings"), data, { merge: true });
-    showToast("Savings updated");
-}
-
-async function uploadFile(file, path) {
-    const fileRef = firebase.ref(firebase.storage, path);
-    await firebase.uploadBytes(fileRef, file);
-    return {
-        url: await firebase.getDownloadURL(fileRef)
-    };
-}
-
-function openVendorModal(vendor = null) {
-    els.vendorForm.reset();
-    els.vendorId.value = vendor?.id || "";
-    els.vendorName.value = vendor?.name || "";
-    els.vendorCategory.value = vendor?.category || "Venue";
-    els.vendorQuote.value = vendor?.quote || "";
-    els.vendorDueDate.value = vendor?.dueDate || "";
-    els.vendorNotes.value = vendor?.notes || "";
-    document.getElementById("vendorModalTitle").textContent = vendor ? "Edit vendor" : "Add vendor";
-    openModal("vendorModal");
-}
-
-function openPaymentModal(vendorId = "") {
-    els.paymentForm.reset();
-    setToday();
-    fillPaymentVendorOptions(vendorId);
-    openModal("paymentModal");
-}
-
-function openModal(id) {
-    document.getElementById(id).classList.remove("hidden");
-}
-
-function closeModal(id) {
-    document.getElementById(id).classList.add("hidden");
-}
-
-async function handleVendorAction(event) {
-    const button = event.target.closest("[data-action]");
-    if (!button) return;
-
-    const vendor = getVendorById(button.dataset.id);
-    if (!vendor) return;
-
-    if (button.dataset.action === "pay") {
-        openPaymentModal(vendor.id);
+    .filter-row {
+        grid-template-columns: 1fr;
     }
 
-    if (button.dataset.action === "edit") {
-        openVendorModal(vendor);
+    .money-row {
+        grid-template-columns: 1fr;
+        align-items: start;
     }
 
-    if (button.dataset.action === "delete") {
-        if (!ensureFirebaseReady()) return;
-
-        const confirmed = window.confirm(`Delete ${vendor.name}? Payments will stay in history.`);
-        if (confirmed) {
-            await firebase.deleteDoc(firebase.doc(firebase.db, "vendors", vendor.id));
-            showToast("Vendor deleted");
-        }
+    .action-row {
+        flex-wrap: wrap;
     }
-}
 
-async function handlePaymentAction(event) {
-    const button = event.target.closest("[data-action='delete-payment']");
-    if (!button) return;
-
-    const confirmed = window.confirm("Delete this payment record?");
-    if (confirmed) {
-        if (!ensureFirebaseReady()) return;
-
-        await firebase.deleteDoc(firebase.doc(firebase.db, "payments", button.dataset.id));
-        showToast("Payment deleted");
+    .action-row button,
+    .action-row a {
+        flex: 1 1 42%;
     }
-}
-
-function ensureFirebaseReady() {
-    if (firebase) return true;
-    showToast("Firebase is still loading. Try again in a moment.");
-    return false;
-}
-
-function setBusy(form, busy) {
-    form.querySelectorAll("button, input, select, textarea").forEach((field) => {
-        field.disabled = busy;
-    });
-}
-
-function showToast(message) {
-    els.toast.textContent = message;
-    els.toast.classList.remove("hidden");
-    window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => els.toast.classList.add("hidden"), 2600);
-}
-
-function formatMoney(value) {
-    return money.format(Number(value || 0)).replace("MYR", "RM");
-}
-
-function formatDate(value) {
-    if (!value) return "No date";
-    return new Date(`${value}T00:00:00`).toLocaleDateString("en-MY", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-    });
-}
-
-function cleanFileName(name) {
-    return name.replace(/[^a-z0-9._-]/gi, "_").toLowerCase();
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-function escapeAttr(value) {
-    return escapeHtml(value);
 }
