@@ -105,6 +105,32 @@ button {
     background: linear-gradient(180deg, rgba(243, 246, 248, .98), rgba(243, 246, 248, .86));
     backdrop-filter: blur(18px);
 }
+.splash-copy {
+    position: relative;
+    display: grid;
+    gap: 8px;
+    animation: fadeUp .9s ease .16s both;
+}
+
+.splash-kicker {
+    color: rgba(255, 255, 255, .72);
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.splash h1 {
+    font-family: WeddingScript, "Brush Script MT", cursive;
+    font-size: 44px;
+    font-weight: 500;
+}
+
+.splash-quote {
+    max-width: 280px;
+    color: rgba(255, 255, 255, .82);
+    font-size: 14px;
+    line-height: 1.45;
+}
 
 .eyebrow,
 .section-head p,
