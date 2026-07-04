@@ -132,6 +132,7 @@ button {
     line-height: 1.45;
 }
 
+
 .eyebrow,
 .section-head p,
 .summary-panel span,
@@ -175,6 +176,7 @@ p {
 }
 
 .summary-panel,
+.countdown-panel,
 .savings-card,
 .form-card,
 .vendor-card,
@@ -191,6 +193,111 @@ p {
     background:
         linear-gradient(145deg, rgba(17, 122, 122, .92), rgba(21, 34, 56, .98)),
         var(--navy);
+}
+
+.countdown-panel {
+    margin-top: 12px;
+    padding: 16px;
+    color: white;
+    background:
+        linear-gradient(145deg, rgba(201, 67, 92, .9), rgba(21, 34, 56, .98)),
+        var(--navy);
+}
+
+.countdown-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.countdown-top span {
+    display: block;
+    color: rgba(255, 255, 255, .72);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.countdown-top h2 {
+    margin: 5px 0 4px;
+    font-size: 22px;
+}
+
+.countdown-top p {
+    margin: 0;
+    color: rgba(255, 255, 255, .78);
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.ghost-on-dark {
+    min-height: 36px;
+    border: 1px solid rgba(255, 255, 255, .26);
+    border-radius: 8px;
+    padding: 0 12px;
+    color: white;
+    background: rgba(255, 255, 255, .12);
+    font-weight: 800;
+}
+
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.countdown-grid div {
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .12);
+}
+
+.countdown-grid strong,
+.countdown-grid span {
+    display: block;
+}
+
+.countdown-grid strong {
+    font-size: 34px;
+    line-height: 1;
+}
+
+.countdown-grid span {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, .72);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.event-slider {
+    min-height: 28px;
+    padding: 0;
+    accent-color: #f2c078;
+    background: transparent;
+}
+
+.event-dots {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.event-dot {
+    overflow: hidden;
+    color: rgba(255, 255, 255, .68);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.event-dot.active {
+    color: white;
 }
 
 .summary-top {
