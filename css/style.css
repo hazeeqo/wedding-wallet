@@ -69,10 +69,10 @@ button {
 .splash-mark {
     display: grid;
     place-items: center;
-    width: 142px;
-    height: 142px;
+    width: 160px;
+    height: 160px;
     border: 1px solid rgba(255, 255, 255, .44);
-    border-radius: 50%;
+    border-radius: 60%;
     background: rgba(255, 255, 255, .1);
     font-family: WeddingScript, "Brush Script MT", cursive;
     font-size: 58px;
