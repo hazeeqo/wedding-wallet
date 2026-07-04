@@ -53,6 +53,29 @@
             </div>
         </section>
 
+        <section class="countdown-panel">
+            <div class="countdown-top">
+                <div>
+                    <span id="eventWeekday">Next event</span>
+                    <h2 id="eventName">Engagement Day</h2>
+                    <p id="eventMeta">Aina's House - 8-11pm</p>
+                </div>
+                <button id="editEventsButton" class="ghost-on-dark" type="button">Edit</button>
+            </div>
+            <div class="countdown-grid">
+                <div>
+                    <strong id="daysLeft">0</strong>
+                    <span>days</span>
+                </div>
+                <div>
+                    <strong id="hoursLeft">0</strong>
+                    <span>hours</span>
+                </div>
+            </div>
+            <input id="eventSlider" class="event-slider" type="range" min="0" max="3" value="0" step="1">
+            <div id="eventDots" class="event-dots"></div>
+        </section>
+        
         <nav class="tabs" aria-label="App sections">
             <button class="tab active" type="button" data-screen="vendorsScreen">Vendors</button>
             <button class="tab" type="button" data-screen="paymentsScreen">Payments</button>
