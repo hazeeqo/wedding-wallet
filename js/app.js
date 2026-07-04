@@ -1,6 +1,37 @@
 const state = {
     vendors: [],
     payments: [],
+    events: [
+        {
+            name: "Engagement Day",
+            date: "2026-12-19",
+            venue: "Aina's House",
+            time: "8-11pm",
+            startTime: "20:00"
+        },
+        {
+            name: "Nikah Day",
+            date: "2027-04-02",
+            venue: "Lantera Cahaya SPK",
+            time: "7-11pm",
+            startTime: "19:00"
+        },
+        {
+            name: "Majlis Sanding",
+            date: "2027-04-03",
+            venue: "Grand Asiana Hall, PJ",
+            time: "11am-4pm",
+            startTime: "11:00"
+        },
+        {
+            name: "Majlis Tandang",
+            date: "2027-04-11",
+            venue: "Magica Autumn, PICC",
+            time: "11am-4pm",
+            startTime: "11:00"
+        }
+    ],
+    activeEventIndex: 0,
     savings: {
         goal: 0,
         current: 0,
@@ -11,6 +42,7 @@ const state = {
 };
 
 let firebase = null;
+
 
 const money = new Intl.NumberFormat("en-MY", {
     style: "currency",
@@ -24,6 +56,8 @@ function initializeAppUi() {
     cacheElements();
     bindEvents();
     setToday();
+    renderCountdown();
+    startCountdownTimer();
     startSplash();
     subscribeToData();
 }
@@ -44,6 +78,14 @@ function cacheElements() {
         "totalQuoted",
         "totalPaid",
         "savingsSaved",
+        "eventWeekday",
+        "eventName",
+        "eventMeta",
+        "daysLeft",
+        "hoursLeft",
+        "eventSlider",
+        "eventDots",
+        "editEventsButton",
         "vendorCount",
         "vendorSearch",
         "categoryFilter",
@@ -74,6 +116,9 @@ function cacheElements() {
         "savingsPercent",
         "savingsProgress",
         "savingsHint",
+        "eventsModal",
+        "eventsForm",
+        "eventEditorList",
         "toast"
     ].forEach((id) => {
         els[id] = document.getElementById(id);
@@ -88,6 +133,11 @@ function bindEvents() {
     document.getElementById("addVendorButton").addEventListener("click", () => openVendorModal());
     document.getElementById("addPaymentButton").addEventListener("click", () => openPaymentModal());
     document.getElementById("quickAddPayment").addEventListener("click", () => openPaymentModal());
+    els.editEventsButton.addEventListener("click", openEventsModal);
+    els.eventSlider.addEventListener("input", () => {
+        state.activeEventIndex = Number(els.eventSlider.value);
+        renderCountdown();
+    });
 
     document.querySelectorAll("[data-close]").forEach((button) => {
         button.addEventListener("click", () => closeModal(button.dataset.close));
@@ -106,6 +156,10 @@ function bindEvents() {
     els.vendorForm.addEventListener("submit", saveVendor);
     els.paymentForm.addEventListener("submit", savePayment);
     els.savingsForm.addEventListener("submit", saveSavings);
+    els.eventsForm.addEventListener("submit", saveEvents);
+    els.hasSchedule.addEventListener("change", toggleScheduleBuilder);
+    els.addScheduleButton.addEventListener("click", () => addScheduleRow());
+    els.scheduleRows.addEventListener("click", handleScheduleRowAction);
 
     els.vendorList.addEventListener("click", handleVendorAction);
     els.paymentList.addEventListener("click", handlePaymentAction);
@@ -181,6 +235,7 @@ function switchScreen(id) {
 
 function render() {
     renderSummary();
+    renderCountdown();
     renderVendors();
     renderPayments();
     renderSavings();
@@ -266,6 +321,38 @@ function renderVendors() {
             </article>
         `;
     }).join("");
+}
+function getEventDateTime(event) {
+    const time = event.startTime || "00:00";
+    return new Date(`${event.date}T${time}:00`);
+}
+
+function startCountdownTimer() {
+    window.clearInterval(countdownTimer);
+    countdownTimer = window.setInterval(renderCountdown, 60000);
+}
+
+function renderCountdown() {
+    if (!els.eventName) return;
+
+    const event = state.events[state.activeEventIndex] || state.events[0];
+    const target = getEventDateTime(event);
+    const now = new Date();
+    const diffMs = Math.max(target.getTime() - now.getTime(), 0);
+    const totalHours = Math.floor(diffMs / 36e5);
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+
+    els.eventSlider.max = String(state.events.length - 1);
+    els.eventSlider.value = String(state.activeEventIndex);
+    els.eventWeekday.textContent = `${formatWeekday(event.date)} - ${formatDate(event.date)}`;
+    els.eventName.textContent = event.name;
+    els.eventMeta.textContent = `${event.venue} - ${event.time}`;
+    els.daysLeft.textContent = String(days);
+    els.hoursLeft.textContent = String(hours);
+    els.eventDots.innerHTML = state.events.map((item, index) => (
+        `<button class="event-dot ${index === state.activeEventIndex ? "active" : ""}" type="button" data-event-index="${index}">${escapeHtml(item.name)}</button>`
+    )).join("");
 }
 
 function renderPayments() {
