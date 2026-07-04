@@ -56,8 +56,7 @@ function initializeAppUi() {
     cacheElements();
     bindEvents();
     setToday();
-    renderCountdown();
-    startCountdownTimer();
+    
     startSplash();
     subscribeToData();
 }
