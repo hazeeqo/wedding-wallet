@@ -57,7 +57,7 @@ button {
     padding: 24px;
     color: white;
     text-align: center;
-    background: radial-gradient(circle at top, #25515a, #101828 64%);
+    background: radial-gradient(circle at top, #25515a, #101828 80%);
     transition: opacity .3s ease, transform .3s ease;
 }
 
