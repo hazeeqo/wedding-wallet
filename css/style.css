@@ -69,13 +69,17 @@ button {
 .splash-mark {
     display: grid;
     place-items: center;
-    width: 76px;
-    height: 76px;
-    border: 1px solid rgba(255, 255, 255, .38);
-    border-radius: 22px;
+    width: 142px;
+    height: 142px;
+    border: 1px solid rgba(255, 255, 255, .44);
+    border-radius: 50%;
     background: rgba(255, 255, 255, .1);
-    font-weight: 800;
-    letter-spacing: .08em;
+    font-family: WeddingScript, "Brush Script MT", cursive;
+    font-size: 58px;
+    font-weight: 500;
+    line-height: 1;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .24), inset 0 0 34px rgba(255, 255, 255, .08);
+    animation: floatIn .8s ease both;
 }
 
 .splash h1,
