@@ -67,11 +67,10 @@ button {
 }
 .splash-orbit {
     position: absolute;
-    width: 238px;
-    height: 238px;
+    width: 300px;
+    height: 300px;
     border: 1px solid rgba(255, 255, 255, .16);
     border-radius: 999px;
-    animation: breathe 2.8s ease-in-out infinite;
 }
 .splash-mark {
     display: grid;
