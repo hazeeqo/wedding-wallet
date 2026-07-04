@@ -127,8 +127,8 @@ function startSplash() {
         window.setTimeout(() => {
             els.splash.remove();
             els.app.classList.remove("hidden");
-        }, 1000);
-    }, 300);
+        }, 300);
+    }, 1000);
 }
 
 async function subscribeToData() {
