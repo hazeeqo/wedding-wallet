@@ -8,6 +8,37 @@ const state = {
     },
     search: "",
     category: "all"
+
+    events: [
+        {
+            name: "Engagement Day",
+            date: "2026-12-19",
+            venue: "Aina's House",
+            time: "20:00",
+            icon: "💍"
+        },
+        {
+            name: "Nikah Day",
+            date: "2027-04-02",
+            venue: "Lantera Cahaya SPK",
+            time: "19:00",
+            icon: "🤍"
+        },
+        {
+            name: "Majlis Sanding",
+            date: "2027-04-03",
+            venue: "Grand Asiana Hall, PJ",
+            time: "11:00",
+            icon: "👑"
+        },
+        {
+            name: "Majlis Tandang",
+            date: "2027-04-11",
+            venue: "Magica Autumn, PICC",
+            time: "11:00",
+            icon: "🥂"
+        }
+    ]
 };
 
 let firebase = null;
@@ -26,6 +57,7 @@ function initializeAppUi() {
     setToday();
     startSplash();
     subscribeToData();
+    startCountdown();
 }
 
 if (document.readyState === "loading") {
@@ -75,6 +107,15 @@ function cacheElements() {
         "savingsProgress",
         "savingsHint",
         "toast"
+        "days",
+        "hours",
+        "minutes",
+        "seconds",
+        "eventName",
+        "eventIcon",
+        "eventMeta",
+        "journeyDots",
+        "journeyProgressFill",
     ].forEach((id) => {
         els[id] = document.getElementById(id);
     });
@@ -561,4 +602,78 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
     return escapeHtml(value);
+}
+
+function getActiveEvent() {
+    const now = new Date();
+
+    return state.events.find(event => {
+        const eventTime = new Date(`${event.date}T${event.time}`);
+        return eventTime > now;
+    });
+}
+function startCountdown() {
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+}
+
+function updateCountdown() {
+    const event = getActiveEvent();
+
+    if (!event) return;
+
+    const target = new Date(`${event.date}T${event.time}`);
+    const now = new Date();
+
+    const diff = target - now;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+
+    els.days.textContent = days;
+    els.hours.textContent = hours;
+    els.minutes.textContent = minutes;
+    els.seconds.textContent = seconds;
+
+    els.eventName.textContent = event.name;
+    els.eventIcon.textContent = event.icon;
+    els.eventMeta.textContent = `${formatDate(event.date)} • ${event.venue}`;
+
+    updateJourney();
+}
+
+function updateJourney() {
+    const now = new Date();
+
+    const dots = state.events.map(event => {
+        const time = new Date(`${event.date}T${event.time}`);
+        return {
+            ...event,
+            done: time < now
+        };
+    });
+
+    const html = dots.map(d =>
+        `<div class="journey-dot ${d.done ? "done" : ""}"></div>`
+    ).join("");
+
+    els.journeyDots.innerHTML = html;
+
+    const progress = (dots.filter(d => d.done).length / dots.length) * 100;
+    els.journeyProgressFill.style.width = `${progress}%`;
+}
+function checkCompletion() {
+    const last = state.events[state.events.length - 1];
+    const lastTime = new Date(`${last.date}T${last.time}`);
+
+    if (new Date() > lastTime) {
+        els.app.innerHTML = `
+            <div style="padding:40px;text-align:center">
+                <h1>❤️ Congratulations</h1>
+                <p>Wedding journey completed</p>
+            </div>
+        `;
+    }
 }
