@@ -1,6 +1,37 @@
 const state = {
     vendors: [],
     payments: [],
+    events: [
+        {
+            name: "Engagement Day",
+            date: "2026-12-19",
+            venue: "Aina's House",
+            time: "8-11pm",
+            startTime: "20:00"
+        },
+        {
+            name: "Nikah Day",
+            date: "2027-04-02",
+            venue: "Lantera Cahaya SPK",
+            time: "7-11pm",
+            startTime: "19:00"
+        },
+        {
+            name: "Majlis Sanding",
+            date: "2027-04-03",
+            venue: "Grand Asiana Hall, PJ",
+            time: "11am-4pm",
+            startTime: "11:00"
+        },
+        {
+            name: "Majlis Tandang",
+            date: "2027-04-11",
+            venue: "Magica Autumn, PICC",
+            time: "11am-4pm",
+            startTime: "11:00"
+        }
+    ],
+    activeEventIndex: 0,
     savings: {
         goal: 0,
         current: 0,
@@ -8,39 +39,10 @@ const state = {
     },
     search: "",
     category: "all"
-    events: [
-    {
-        name: "Engagement Day",
-        date: "2026-12-19",
-        venue: "Aina's House",
-        time: "20:00",
-        icon: "💍"
-    },
-    {
-        name: "Nikah Day",
-        date: "2027-04-02",
-        venue: "Lantera Cahaya SPK",
-        time: "19:00",
-        icon: "🤍"
-    },
-    {
-        name: "Majlis Sanding",
-        date: "2027-04-03",
-        venue: "Grand Asiana Hall, PJ",
-        time: "11:00",
-        icon: "👑"
-    },
-    {
-        name: "Majlis Tandang",
-        date: "2027-04-11",
-        venue: "Magica Autumn, PICC",
-        time: "11:00",
-        icon: "🥂"
-    }
-],
 };
 
 let firebase = null;
+let countdownTimer = null;
 
 const money = new Intl.NumberFormat("en-MY", {
     style: "currency",
@@ -54,9 +56,10 @@ function initializeAppUi() {
     cacheElements();
     bindEvents();
     setToday();
+    renderCountdown();
+    startCountdownTimer();
     startSplash();
     subscribeToData();
-    startCountdown();
 }
 
 if (document.readyState === "loading") {
@@ -75,6 +78,14 @@ function cacheElements() {
         "totalQuoted",
         "totalPaid",
         "savingsSaved",
+        "eventWeekday",
+        "eventName",
+        "eventMeta",
+        "daysLeft",
+        "hoursLeft",
+        "eventSlider",
+        "eventDots",
+        "editEventsButton",
         "vendorCount",
         "vendorSearch",
         "categoryFilter",
@@ -88,6 +99,10 @@ function cacheElements() {
         "vendorQuote",
         "vendorDueDate",
         "invoiceFile",
+        "hasSchedule",
+        "scheduleBuilder",
+        "addScheduleButton",
+        "scheduleRows",
         "vendorNotes",
         "paymentModal",
         "paymentForm",
@@ -105,15 +120,13 @@ function cacheElements() {
         "savingsPercent",
         "savingsProgress",
         "savingsHint",
+        "eventsModal",
+        "eventsForm",
+        "eventEditorList",
+        "vendorPaymentsModal",
+        "vendorPaymentsTitle",
+        "vendorPaymentHistory",
         "toast"
-        "days",
-        "hours",
-        "minutes",
-        "seconds",
-        "eventName",
-        "eventIcon",
-        "eventMeta",
-        "journeyDots",
     ].forEach((id) => {
         els[id] = document.getElementById(id);
     });
@@ -127,6 +140,18 @@ function bindEvents() {
     document.getElementById("addVendorButton").addEventListener("click", () => openVendorModal());
     document.getElementById("addPaymentButton").addEventListener("click", () => openPaymentModal());
     document.getElementById("quickAddPayment").addEventListener("click", () => openPaymentModal());
+    els.editEventsButton.addEventListener("click", openEventsModal);
+    els.eventSlider.addEventListener("input", () => {
+        state.activeEventIndex = Number(els.eventSlider.value);
+        renderCountdown();
+    });
+    els.eventDots.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-event-index]");
+        if (!button) return;
+
+        state.activeEventIndex = Number(button.dataset.eventIndex);
+        renderCountdown();
+    });
 
     document.querySelectorAll("[data-close]").forEach((button) => {
         button.addEventListener("click", () => closeModal(button.dataset.close));
@@ -145,6 +170,10 @@ function bindEvents() {
     els.vendorForm.addEventListener("submit", saveVendor);
     els.paymentForm.addEventListener("submit", savePayment);
     els.savingsForm.addEventListener("submit", saveSavings);
+    els.eventsForm.addEventListener("submit", saveEvents);
+    els.hasSchedule.addEventListener("change", toggleScheduleBuilder);
+    els.addScheduleButton.addEventListener("click", () => addScheduleRow());
+    els.scheduleRows.addEventListener("click", handleScheduleRowAction);
 
     els.vendorList.addEventListener("click", handleVendorAction);
     els.paymentList.addEventListener("click", handlePaymentAction);
@@ -166,8 +195,8 @@ function startSplash() {
         window.setTimeout(() => {
             els.splash.remove();
             els.app.classList.remove("hidden");
-        }, 200);
-    }, 3000);
+        }, 300);
+    }, 700);
 }
 
 async function subscribeToData() {
@@ -207,6 +236,14 @@ async function subscribeToData() {
             render();
         }
     });
+
+    firebase.onSnapshot(firebase.doc(firebase.db, "settings", "events"), (snapshot) => {
+        if (snapshot.exists() && Array.isArray(snapshot.data().items)) {
+            state.events = normalizeEvents(snapshot.data().items);
+            state.activeEventIndex = Math.min(state.activeEventIndex, state.events.length - 1);
+            render();
+        }
+    });
 }
 
 function switchScreen(id) {
@@ -220,6 +257,7 @@ function switchScreen(id) {
 
 function render() {
     renderSummary();
+    renderCountdown();
     renderVendors();
     renderPayments();
     renderSavings();
@@ -236,6 +274,65 @@ function getPaidByVendor() {
 
 function getVendorById(id) {
     return state.vendors.find((vendor) => vendor.id === id);
+}
+
+function getEventDateTime(event) {
+    const date = event?.date || new Date().toISOString().slice(0, 10);
+    const time = event?.startTime || "00:00";
+    const target = new Date(`${date}T${time}:00`);
+    return Number.isNaN(target.getTime()) ? new Date() : target;
+}
+
+function startCountdownTimer() {
+    window.clearInterval(countdownTimer);
+    countdownTimer = window.setInterval(renderCountdown, 60000);
+}
+
+function renderCountdown() {
+    if (!els.eventName) return;
+
+    state.events = normalizeEvents(state.events);
+    const event = state.events[state.activeEventIndex] || state.events[0];
+    const target = getEventDateTime(event);
+    const now = new Date();
+    const diffMs = Math.max(target.getTime() - now.getTime(), 0);
+    const totalHours = Math.floor(diffMs / 36e5);
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+
+    els.eventSlider.max = String(state.events.length - 1);
+    els.eventSlider.value = String(state.activeEventIndex);
+    els.eventWeekday.textContent = `${formatWeekday(event.date)} - ${formatDate(event.date)}`;
+    els.eventName.textContent = event.name || "Wedding event";
+    els.eventMeta.textContent = [event.venue, event.time].filter(Boolean).join(" - ") || "Details coming soon";
+    els.daysLeft.textContent = String(days);
+    els.hoursLeft.textContent = String(hours);
+    els.eventDots.innerHTML = state.events.map((item, index) => (
+        `<button class="event-dot ${index === state.activeEventIndex ? "active" : ""}" type="button" data-event-index="${index}">${escapeHtml(item.name)}</button>`
+    )).join("");
+}
+
+function getNextScheduledPayment(vendor, paid) {
+    const schedule = Array.isArray(vendor.schedule) ? vendor.schedule : [];
+    let remainingPaid = Number(paid || 0);
+
+    return schedule
+        .map((item) => ({
+            amount: Number(item.amount || 0),
+            dueDate: item.dueDate || "",
+            details: item.details || ""
+        }))
+        .filter((item) => item.amount > 0)
+        .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
+        .map((item) => {
+            const covered = Math.min(item.amount, remainingPaid);
+            remainingPaid = Math.max(remainingPaid - item.amount, 0);
+            return {
+                ...item,
+                remaining: item.amount - covered
+            };
+        })
+        .find((item) => item.remaining > 0);
 }
 
 function renderSummary() {
@@ -273,6 +370,7 @@ function renderVendors() {
         const paid = Number(paidByVendor[vendor.id] || 0);
         const remaining = Math.max(quote - paid, 0);
         const percent = quote > 0 ? Math.min((paid / quote) * 100, 100) : 0;
+        const nextPayment = getNextScheduledPayment(vendor, paid);
         const invoiceLink = vendor.invoiceUrl
             ? `<a href="${escapeAttr(vendor.invoiceUrl)}" target="_blank" rel="noopener">Invoice</a>`
             : "";
@@ -294,10 +392,15 @@ function renderVendors() {
                     <div><span>Paid</span><strong>${formatMoney(paid)}</strong></div>
                     <div><span>Progress</span><strong>${Math.round(percent)}%</strong></div>
                 </div>
-                ${vendor.dueDate ? `<span class="meta">Due ${formatDate(vendor.dueDate)}</span>` : ""}
+                <div class="progress-track vendor-progress">
+                    <div class="progress-fill" style="width: ${percent}%"></div>
+                </div>
+                ${nextPayment ? `<p class="schedule-due">Next due: ${formatMoney(nextPayment.remaining)} on ${formatDate(nextPayment.dueDate)}${nextPayment.details ? ` - ${escapeHtml(nextPayment.details)}` : ""}</p>` : ""}
+                ${!nextPayment && vendor.dueDate ? `<span class="meta">Due ${formatDate(vendor.dueDate)}</span>` : ""}
                 ${vendor.notes ? `<p class="notes">${escapeHtml(vendor.notes)}</p>` : ""}
                 <div class="action-row">
                     <button type="button" data-action="pay" data-id="${vendor.id}">Pay</button>
+                    <button type="button" data-action="history" data-id="${vendor.id}">Track</button>
                     <button type="button" data-action="edit" data-id="${vendor.id}">Edit</button>
                     ${invoiceLink}
                     <button type="button" data-action="delete" data-id="${vendor.id}">Delete</button>
@@ -393,6 +496,7 @@ async function saveVendor(event) {
             category: els.vendorCategory.value,
             quote: Number(els.vendorQuote.value || 0),
             dueDate: els.vendorDueDate.value,
+            schedule: collectScheduleRows(),
             notes: els.vendorNotes.value.trim(),
             updatedAt: firebase.serverTimestamp()
         };
@@ -479,6 +583,31 @@ async function saveSavings(event) {
     showToast("Savings updated");
 }
 
+async function saveEvents(event) {
+    event.preventDefault();
+    if (!ensureFirebaseReady()) return;
+
+    const items = Array.from(els.eventEditorList.querySelectorAll(".event-editor-card")).map((card, index) => ({
+        name: card.querySelector(`[name="eventName${index}"]`).value.trim(),
+        date: card.querySelector(`[name="eventDate${index}"]`).value,
+        venue: card.querySelector(`[name="eventVenue${index}"]`).value.trim(),
+        time: card.querySelector(`[name="eventTime${index}"]`).value.trim(),
+        startTime: card.querySelector(`[name="eventStartTime${index}"]`).value
+    }));
+
+    state.events = normalizeEvents(items);
+    state.activeEventIndex = Math.min(state.activeEventIndex, state.events.length - 1);
+    renderCountdown();
+
+    await firebase.setDoc(firebase.doc(firebase.db, "settings", "events"), {
+        items: state.events,
+        updatedAt: firebase.serverTimestamp()
+    }, { merge: true });
+
+    closeModal("eventsModal");
+    showToast("Events updated");
+}
+
 async function uploadFile(file, path) {
     const fileRef = firebase.ref(firebase.storage, path);
     await firebase.uploadBytes(fileRef, file);
@@ -495,6 +624,10 @@ function openVendorModal(vendor = null) {
     els.vendorQuote.value = vendor?.quote || "";
     els.vendorDueDate.value = vendor?.dueDate || "";
     els.vendorNotes.value = vendor?.notes || "";
+    els.scheduleRows.innerHTML = "";
+    (Array.isArray(vendor?.schedule) ? vendor.schedule : []).forEach((item) => addScheduleRow(item));
+    els.hasSchedule.checked = Boolean(vendor?.schedule?.length);
+    toggleScheduleBuilder();
     document.getElementById("vendorModalTitle").textContent = vendor ? "Edit vendor" : "Add vendor";
     openModal("vendorModal");
 }
@@ -506,12 +639,114 @@ function openPaymentModal(vendorId = "") {
     openModal("paymentModal");
 }
 
+function openEventsModal() {
+    state.events = normalizeEvents(state.events);
+    els.eventEditorList.innerHTML = state.events.map((event, index) => `
+        <section class="event-editor-card">
+            <label>
+                Event name
+                <input name="eventName${index}" value="${escapeAttr(event.name)}" required>
+            </label>
+            <label>
+                Date
+                <input name="eventDate${index}" type="date" value="${escapeAttr(event.date)}" required>
+            </label>
+            <label>
+                Venue
+                <input name="eventVenue${index}" value="${escapeAttr(event.venue)}">
+            </label>
+            <div class="schedule-row-grid">
+                <label>
+                    Display time
+                    <input name="eventTime${index}" value="${escapeAttr(event.time)}" placeholder="11am-4pm">
+                </label>
+                <label>
+                    Start time
+                    <input name="eventStartTime${index}" type="time" value="${escapeAttr(event.startTime)}">
+                </label>
+            </div>
+        </section>
+    `).join("");
+    openModal("eventsModal");
+}
+
 function openModal(id) {
     document.getElementById(id).classList.remove("hidden");
 }
 
 function closeModal(id) {
     document.getElementById(id).classList.add("hidden");
+}
+
+function toggleScheduleBuilder() {
+    els.scheduleBuilder.classList.toggle("hidden", !els.hasSchedule.checked);
+    if (els.hasSchedule.checked && !els.scheduleRows.children.length) {
+        addScheduleRow();
+    }
+}
+
+function addScheduleRow(item = {}) {
+    const row = document.createElement("div");
+    row.className = "schedule-row";
+    row.innerHTML = `
+        <div class="schedule-row-grid">
+            <label>
+                Amount
+                <input name="scheduleAmount" type="number" min="0" step="0.01" value="${escapeAttr(item.amount || "")}">
+            </label>
+            <label>
+                Due date
+                <input name="scheduleDueDate" type="date" value="${escapeAttr(item.dueDate || "")}">
+            </label>
+        </div>
+        <label>
+            Details
+            <input name="scheduleDetails" value="${escapeAttr(item.details || "")}" placeholder="Deposit, balance, etc.">
+        </label>
+        <button class="ghost-button small" type="button" data-schedule-action="remove">Remove</button>
+    `;
+    els.scheduleRows.appendChild(row);
+}
+
+function handleScheduleRowAction(event) {
+    const button = event.target.closest("[data-schedule-action='remove']");
+    if (!button) return;
+
+    button.closest(".schedule-row").remove();
+    if (!els.scheduleRows.children.length) {
+        els.hasSchedule.checked = false;
+        toggleScheduleBuilder();
+    }
+}
+
+function collectScheduleRows() {
+    if (!els.hasSchedule.checked) return [];
+
+    return Array.from(els.scheduleRows.querySelectorAll(".schedule-row"))
+        .map((row) => ({
+            amount: Number(row.querySelector("[name='scheduleAmount']").value || 0),
+            dueDate: row.querySelector("[name='scheduleDueDate']").value,
+            details: row.querySelector("[name='scheduleDetails']").value.trim()
+        }))
+        .filter((item) => item.amount > 0 || item.dueDate || item.details);
+}
+
+function openVendorPayments(vendor) {
+    const payments = state.payments.filter((payment) => payment.vendorId === vendor.id);
+    els.vendorPaymentsTitle.textContent = `${vendor.name || "Vendor"} payments`;
+    els.vendorPaymentHistory.innerHTML = payments.length ? payments.map((payment) => `
+        <article class="payment-card">
+            <div class="card-head">
+                <div>
+                    <h3>${formatDate(payment.date)}</h3>
+                    <span class="meta">${escapeHtml(payment.method || "Payment")}</span>
+                </div>
+                <div class="amount">${formatMoney(payment.amount || 0)}</div>
+            </div>
+            ${payment.note ? `<p class="notes">${escapeHtml(payment.note)}</p>` : ""}
+        </article>
+    `).join("") : `<div class="empty-state">No payments recorded for this vendor yet.</div>`;
+    openModal("vendorPaymentsModal");
 }
 
 async function handleVendorAction(event) {
@@ -527,6 +762,10 @@ async function handleVendorAction(event) {
 
     if (button.dataset.action === "edit") {
         openVendorModal(vendor);
+    }
+
+    if (button.dataset.action === "history") {
+        openVendorPayments(vendor);
     }
 
     if (button.dataset.action === "delete") {
@@ -576,8 +815,66 @@ function formatMoney(value) {
     return money.format(Number(value || 0)).replace("MYR", "RM");
 }
 
+function normalizeEvents(items) {
+    const fallbackEvents = [
+        {
+            name: "Engagement Day",
+            date: "2026-12-19",
+            venue: "Aina's House",
+            time: "8-11pm",
+            startTime: "20:00"
+        },
+        {
+            name: "Nikah Day",
+            date: "2027-04-02",
+            venue: "Lantera Cahaya SPK",
+            time: "7-11pm",
+            startTime: "19:00"
+        },
+        {
+            name: "Majlis Sanding",
+            date: "2027-04-03",
+            venue: "Grand Asiana Hall, PJ",
+            time: "11am-4pm",
+            startTime: "11:00"
+        },
+        {
+            name: "Majlis Tandang",
+            date: "2027-04-11",
+            venue: "Magica Autumn, PICC",
+            time: "11am-4pm",
+            startTime: "11:00"
+        }
+    ];
+    const defaults = state.events.length >= 4 ? state.events : fallbackEvents;
+    const source = Array.isArray(items) ? items : [];
+
+    return Array.from({ length: 4 }, (_, index) => {
+        const event = source[index] || {};
+        const fallback = defaults[index] || defaults[0];
+        return {
+            name: event?.name || fallback.name || `Event ${index + 1}`,
+            date: isValidDateValue(event?.date) ? event.date : fallback.date,
+            venue: event?.venue || fallback.venue || "",
+            time: event?.time || fallback.time || "",
+            startTime: event?.startTime || fallback.startTime || "00:00"
+        };
+    });
+}
+
+function isValidDateValue(value) {
+    return Boolean(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+}
+
+function formatWeekday(value) {
+    if (!isValidDateValue(value)) return "Next event";
+    return new Date(`${value}T00:00:00`).toLocaleDateString("en-MY", {
+        weekday: "long"
+    });
+}
+
 function formatDate(value) {
-    if (!value) return "No date";
+    if (!isValidDateValue(value)) return "No date";
     return new Date(`${value}T00:00:00`).toLocaleDateString("en-MY", {
         day: "2-digit",
         month: "short",
@@ -600,60 +897,4 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
     return escapeHtml(value);
-}
-function getActiveEvent() {
-    const now = new Date();
-
-    return state.events.find(e => {
-        return new Date(`${e.date}T${e.time}`) > now;
-    }) || state.events[state.events.length - 1];
-}
-
-function startCountdown() {
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-}
-
-function updateCountdown() {
-    try {
-        if (!els.days) return;
-
-        const event = getActiveEvent();
-        const target = new Date(`${event.date}T${event.time}`);
-        const now = new Date();
-
-        let diff = target - now;
-        if (diff < 0) diff = 0;
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
-
-        els.days.textContent = days;
-        els.hours.textContent = hours;
-        els.minutes.textContent = minutes;
-        els.seconds.textContent = seconds;
-
-        if (els.eventName) els.eventName.textContent = event.name;
-        if (els.eventIcon) els.eventIcon.textContent = event.icon;
-        if (els.eventMeta) {
-            els.eventMeta.textContent = `${event.venue} • ${event.date}`;
-        }
-
-        updateJourney();
-    } catch (err) {
-        console.log("Countdown safe error ignored:", err);
-    }
-}
-
-function updateJourney() {
-    if (!els.journeyDots) return;
-
-    const now = new Date();
-
-    els.journeyDots.innerHTML = state.events.map(e => {
-        const done = new Date(`${e.date}T${e.time}`) < now;
-        return `<span style="opacity:${done ? 1 : 0.3}">●</span>`;
-    }).join(" ");
 }
