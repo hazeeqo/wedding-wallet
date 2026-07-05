@@ -8,6 +8,36 @@ const state = {
     },
     search: "",
     category: "all"
+    events: [
+    {
+        name: "Engagement Day",
+        date: "2026-12-19",
+        venue: "Aina's House",
+        time: "20:00",
+        icon: "💍"
+    },
+    {
+        name: "Nikah Day",
+        date: "2027-04-02",
+        venue: "Lantera Cahaya SPK",
+        time: "19:00",
+        icon: "🤍"
+    },
+    {
+        name: "Majlis Sanding",
+        date: "2027-04-03",
+        venue: "Grand Asiana Hall, PJ",
+        time: "11:00",
+        icon: "👑"
+    },
+    {
+        name: "Majlis Tandang",
+        date: "2027-04-11",
+        venue: "Magica Autumn, PICC",
+        time: "11:00",
+        icon: "🥂"
+    }
+],
 };
 
 let firebase = null;
@@ -26,6 +56,7 @@ function initializeAppUi() {
     setToday();
     startSplash();
     subscribeToData();
+    startCountdown();
 }
 
 if (document.readyState === "loading") {
@@ -561,4 +592,60 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
     return escapeHtml(value);
+}
+function getActiveEvent() {
+    const now = new Date();
+
+    return state.events.find(e => {
+        return new Date(`${e.date}T${e.time}`) > now;
+    }) || state.events[state.events.length - 1];
+}
+
+function startCountdown() {
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+}
+
+function updateCountdown() {
+    try {
+        if (!els.days) return;
+
+        const event = getActiveEvent();
+        const target = new Date(`${event.date}T${event.time}`);
+        const now = new Date();
+
+        let diff = target - now;
+        if (diff < 0) diff = 0;
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        els.days.textContent = days;
+        els.hours.textContent = hours;
+        els.minutes.textContent = minutes;
+        els.seconds.textContent = seconds;
+
+        if (els.eventName) els.eventName.textContent = event.name;
+        if (els.eventIcon) els.eventIcon.textContent = event.icon;
+        if (els.eventMeta) {
+            els.eventMeta.textContent = `${event.venue} • ${event.date}`;
+        }
+
+        updateJourney();
+    } catch (err) {
+        console.log("Countdown safe error ignored:", err);
+    }
+}
+
+function updateJourney() {
+    if (!els.journeyDots) return;
+
+    const now = new Date();
+
+    els.journeyDots.innerHTML = state.events.map(e => {
+        const done = new Date(`${e.date}T${e.time}`) < now;
+        return `<span style="opacity:${done ? 1 : 0.3}">●</span>`;
+    }).join(" ");
 }
