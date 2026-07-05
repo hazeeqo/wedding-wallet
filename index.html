@@ -9,7 +9,7 @@
 </head>
 <body>
     <div id="splash" class="splash">
-       
+        <div class="splash-orbit" aria-hidden="true"></div>
         <div class="splash-mark">H&amp;A</div>
         <div class="splash-copy">
             <p class="splash-kicker">Wedding Wallet</p>
@@ -21,7 +21,7 @@
     <main id="app" class="app hidden">
         <header class="app-header">
             <div>
-                <p class="eyebrow">Haziq & Aina </p>
+                <p class="eyebrow">Haziq &amp; Aina</p>
                 <h1>Wedding Wallet</h1>
             </div>
             <button id="quickAddPayment" class="icon-button" type="button" title="Add payment">+</button>
@@ -55,48 +55,28 @@
         </section>
 
         <section class="countdown-panel">
-            <div class="section-head">
+            <div class="countdown-top">
                 <div>
-                    <p class="eyebrow">Next Wedding Event</p>
-                    <h2>
-                        <span id="eventIcon">💍</span>
-                        <span id="eventName">Loading...</span>
-                    </h2>
+                    <span id="eventWeekday">Next event</span>
+                    <h2 id="eventName">Engagement Day</h2>
+                    <p id="eventMeta">Aina's House - 8-11pm</p>
+                </div>
+                <button id="editEventsButton" class="ghost-on-dark" type="button">Edit</button>
+            </div>
+            <div class="countdown-grid">
+                <div>
+                    <strong id="daysLeft">0</strong>
+                    <span>days</span>
+                </div>
+                <div>
+                    <strong id="hoursLeft">0</strong>
+                    <span>hours</span>
                 </div>
             </div>
+            <input id="eventSlider" class="event-slider" type="range" min="0" max="3" value="0" step="1">
+            <div id="eventDots" class="event-dots"></div>
+        </section>
 
-    <div id="journeyDots" class="journey-dots"></div>
-
-    <div class="countdown">
-
-        <div class="countdown-box">
-            <strong id="days">0</strong>
-            <span>Days</span>
-        </div>
-
-        <div class="countdown-box">
-            <strong id="hours">0</strong>
-            <span>Hours</span>
-        </div>
-
-        <div class="countdown-box">
-            <strong id="minutes">0</strong>
-            <span>Minutes</span>
-        </div>
-
-        <div class="countdown-box">
-            <strong id="seconds">0</strong>
-            <span>Seconds</span>
-        </div>
-
-    </div>
-
-    <p id="eventMeta" class="meta"></p>
-
-</section>
-
-<nav class="tabs">
-        
         <nav class="tabs" aria-label="App sections">
             <button class="tab active" type="button" data-screen="vendorsScreen">Vendors</button>
             <button class="tab" type="button" data-screen="paymentsScreen">Payments</button>
@@ -213,6 +193,17 @@
                 Invoice or quote file
                 <input id="invoiceFile" type="file" accept="image/*,.pdf">
             </label>
+            <label class="checkbox-row">
+                <input id="hasSchedule" type="checkbox">
+                <span>Use scheduled payments</span>
+            </label>
+            <div id="scheduleBuilder" class="schedule-builder hidden">
+                <div class="inline-head">
+                    <strong>Payment schedule</strong>
+                    <button id="addScheduleButton" class="ghost-button small" type="button">Add</button>
+                </div>
+                <div id="scheduleRows" class="schedule-rows"></div>
+            </div>
             <label>
                 Notes
                 <textarea id="vendorNotes" rows="3" placeholder="Package details, contact, or bank info"></textarea>
@@ -259,6 +250,27 @@
             </label>
             <button class="primary-button full" type="submit">Save payment</button>
         </form>
+    </div>
+
+    <div id="eventsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="eventsModalTitle">
+        <form id="eventsForm" class="modal-sheet">
+            <div class="modal-head">
+                <h2 id="eventsModalTitle">Edit events</h2>
+                <button class="ghost-button" type="button" data-close="eventsModal">Close</button>
+            </div>
+            <div id="eventEditorList" class="event-editor-list"></div>
+            <button class="primary-button full" type="submit">Save events</button>
+        </form>
+    </div>
+
+    <div id="vendorPaymentsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="vendorPaymentsTitle">
+        <div class="modal-sheet">
+            <div class="modal-head">
+                <h2 id="vendorPaymentsTitle">Payment history</h2>
+                <button class="ghost-button" type="button" data-close="vendorPaymentsModal">Close</button>
+            </div>
+            <div id="vendorPaymentHistory" class="list"></div>
+        </div>
     </div>
 
     <div id="toast" class="toast hidden"></div>
