@@ -212,12 +212,41 @@ p {
 }
 
 .countdown-panel {
+    position: relative;
     margin-top: 12px;
     padding: 16px;
     color: white;
     background:
         linear-gradient(145deg, rgba(201, 67, 92, .9), rgba(21, 34, 56, .98)),
         var(--navy);
+    overflow: hidden;
+}
+
+.countdown-panel.d-day {
+    background:
+        radial-gradient(circle at 18% 12%, rgba(242, 192, 120, .42), transparent 28%),
+        linear-gradient(145deg, rgba(17, 122, 122, .96), rgba(201, 67, 92, .94)),
+        var(--navy);
+}
+
+.countdown-panel.d-day::before,
+.countdown-panel.d-day::after {
+    position: absolute;
+    inset: 10px 14px auto auto;
+    pointer-events: none;
+    color: rgba(255, 255, 255, .9);
+    font-size: 24px;
+    animation: celebrate 1.8s ease-in-out infinite;
+}
+
+.countdown-panel.d-day::before {
+    content: "✦ ✧ ✦";
+}
+
+.countdown-panel.d-day::after {
+    inset: auto auto 12px 16px;
+    content: "❀ ✦ ❀";
+    animation-delay: .45s;
 }
 
 .countdown-top {
@@ -304,7 +333,12 @@ p {
 
 .event-dot {
     overflow: hidden;
-    color: rgba(255, 255, 255, .68);
+    min-height: 34px;
+    border: 1px solid rgba(255, 255, 255, .52);
+    border-radius: 8px;
+    padding: 0 6px;
+    color: var(--ink);
+    background: rgba(255, 255, 255, .9);
     font-size: 11px;
     font-weight: 800;
     text-align: center;
@@ -313,7 +347,9 @@ p {
 }
 
 .event-dot.active {
-    color: white;
+    color: var(--ink);
+    background: #f2c078;
+    border-color: rgba(255, 255, 255, .84);
 }
 
 .summary-top {
@@ -817,6 +853,18 @@ label {
 
     to {
         transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes celebrate {
+    0%, 100% {
+        transform: translateY(0) rotate(-2deg) scale(1);
+        opacity: .58;
+    }
+
+    50% {
+        transform: translateY(-5px) rotate(3deg) scale(1.08);
         opacity: 1;
     }
 }
