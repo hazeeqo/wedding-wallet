@@ -57,7 +57,7 @@ function initializeAppUi() {
     setToday();
     startSplash();
     subscribeToData();
-    startCountdown();
+    
 }
 
 if (document.readyState === "loading") {
