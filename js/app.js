@@ -4,6 +4,7 @@ const state = {
     events: [
         {
             name: "Engagement Day",
+            icon: "💍",
             date: "2026-12-19",
             venue: "Aina's House",
             time: "8-11pm",
@@ -11,6 +12,7 @@ const state = {
         },
         {
             name: "Nikah Day",
+            icon: "💍✨",
             date: "2027-04-02",
             venue: "Lantera Cahaya SPK",
             time: "7-11pm",
@@ -18,6 +20,7 @@ const state = {
         },
         {
             name: "Majlis Sanding",
+            icon: "🤵‍♂️👰‍♀️",
             date: "2027-04-03",
             venue: "Grand Asiana Hall, PJ",
             time: "11am-4pm",
@@ -25,6 +28,7 @@ const state = {
         },
         {
             name: "Majlis Tandang",
+            icon: "🤵‍♂️👰‍♀️✨",
             date: "2027-04-11",
             venue: "Magica Autumn, PICC",
             time: "11am-4pm",
@@ -111,6 +115,7 @@ function cacheElements() {
         "paymentDate",
         "paymentMethod",
         "receiptFile",
+        "paymentPaidBy",
         "paymentNote",
         "savingsForm",
         "savingsGoal",
@@ -266,7 +271,7 @@ function bindEvents() {
 }
 
 function setToday() {
-    els.paymentDate.value = new Date().toISOString().slice(0, 10);
+    els.paymentDate.value = getLocalDateValue(new Date());
 }
 
 function startSplash() {
@@ -357,7 +362,7 @@ function getVendorById(id) {
 }
 
 function getEventDateTime(event) {
-    const date = event?.date || new Date().toISOString().slice(0, 10);
+    const date = event?.date || getLocalDateValue(new Date());
     const time = event?.startTime || "00:00";
     const target = new Date(`${date}T${time}:00`);
     return Number.isNaN(target.getTime()) ? new Date() : target;
@@ -375,20 +380,24 @@ function renderCountdown() {
     const event = state.events[state.activeEventIndex] || state.events[0];
     const target = getEventDateTime(event);
     const now = new Date();
+    const isEventDay = isSameDate(event.date, now);
     const diffMs = Math.max(target.getTime() - now.getTime(), 0);
     const totalHours = Math.floor(diffMs / 36e5);
-    const days = Math.floor(totalHours / 24);
-    const hours = totalHours % 24;
+    const days = isEventDay ? 0 : Math.floor(totalHours / 24);
+    const hours = isEventDay ? 0 : totalHours % 24;
 
     els.eventSlider.max = String(state.events.length - 1);
     els.eventSlider.value = String(state.activeEventIndex);
-    els.eventWeekday.textContent = `${formatWeekday(event.date)} - ${formatDate(event.date)}`;
-    els.eventName.textContent = event.name || "Wedding event";
-    els.eventMeta.textContent = [event.venue, event.time].filter(Boolean).join(" - ") || "Details coming soon";
+    document.querySelector(".countdown-panel")?.classList.toggle("d-day", isEventDay);
+    els.eventWeekday.textContent = isEventDay ? "D-Day - Today is the day" : `${formatWeekday(event.date)} - ${formatDate(event.date)}`;
+    els.eventName.textContent = `${event.icon || getEventIcon(event.name)} ${event.name || "Wedding event"}`;
+    els.eventMeta.textContent = isEventDay
+        ? `Today is the day. ${[event.venue, event.time].filter(Boolean).join(" - ")}`
+        : [event.venue, event.time].filter(Boolean).join(" - ") || "Details coming soon";
     els.daysLeft.textContent = String(days);
     els.hoursLeft.textContent = String(hours);
     els.eventDots.innerHTML = state.events.map((item, index) => (
-        `<button class="event-dot ${index === state.activeEventIndex ? "active" : ""}" type="button" data-event-index="${index}">${escapeHtml(item.name)}</button>`
+        `<button class="event-dot ${index === state.activeEventIndex ? "active" : ""}" type="button" data-event-index="${index}">${escapeHtml(`${item.icon || getEventIcon(item.name)} ${item.name}`)}</button>`
     )).join("");
 }
 
@@ -508,6 +517,7 @@ function renderPayments() {
                     <div>
                         <h3>${escapeHtml(vendor?.name || "Vendor removed")}</h3>
                         <span class="meta">${formatDate(payment.date)} - ${escapeHtml(payment.method || "Payment")}</span>
+                        ${payment.paidBy ? `<span class="meta">Paid by ${escapeHtml(payment.paidBy)}</span>` : ""}
                     </div>
                     <div class="amount">${formatMoney(payment.amount || 0)}</div>
                 </div>
@@ -624,8 +634,9 @@ async function savePayment(event) {
         const data = {
             vendorId: els.paymentVendor.value,
             amount: Number(els.paymentAmount.value || 0),
-            date: els.paymentDate.value || new Date().toISOString().slice(0, 10),
+            date: els.paymentDate.value || getLocalDateValue(new Date()),
             method: els.paymentMethod.value,
+            paidBy: els.paymentPaidBy?.value || "Haziq",
             note: els.paymentNote.value.trim(),
             createdAt: firebase.serverTimestamp()
         };
@@ -669,6 +680,7 @@ async function saveEvents(event) {
 
     const items = Array.from(els.eventEditorList.querySelectorAll(".event-editor-card")).map((card, index) => ({
         name: card.querySelector(`[name="eventName${index}"]`).value.trim(),
+        icon: card.querySelector(`[name="eventIcon${index}"]`).value.trim(),
         date: card.querySelector(`[name="eventDate${index}"]`).value,
         venue: card.querySelector(`[name="eventVenue${index}"]`).value.trim(),
         time: card.querySelector(`[name="eventTime${index}"]`).value.trim(),
@@ -728,6 +740,10 @@ function openEventsModal() {
             <label>
                 Event name
                 <input name="eventName${index}" value="${escapeAttr(event.name)}" required>
+            </label>
+            <label>
+                Icon
+                <input name="eventIcon${index}" value="${escapeAttr(event.icon || getEventIcon(event.name))}">
             </label>
             <label>
                 Date
@@ -826,6 +842,7 @@ function openVendorPayments(vendor) {
                 <div>
                     <h3>${formatDate(payment.date)}</h3>
                     <span class="meta">${escapeHtml(payment.method || "Payment")}</span>
+                    ${payment.paidBy ? `<span class="meta">Paid by ${escapeHtml(payment.paidBy)}</span>` : ""}
                 </div>
                 <div class="amount">${formatMoney(payment.amount || 0)}</div>
             </div>
@@ -905,6 +922,7 @@ function normalizeEvents(items) {
     const fallbackEvents = [
         {
             name: "Engagement Day",
+            icon: "💍",
             date: "2026-12-19",
             venue: "Aina's House",
             time: "8-11pm",
@@ -912,6 +930,7 @@ function normalizeEvents(items) {
         },
         {
             name: "Nikah Day",
+            icon: "💍✨",
             date: "2027-04-02",
             venue: "Lantera Cahaya SPK",
             time: "7-11pm",
@@ -919,6 +938,7 @@ function normalizeEvents(items) {
         },
         {
             name: "Majlis Sanding",
+            icon: "🤵‍♂️👰‍♀️",
             date: "2027-04-03",
             venue: "Grand Asiana Hall, PJ",
             time: "11am-4pm",
@@ -926,6 +946,7 @@ function normalizeEvents(items) {
         },
         {
             name: "Majlis Tandang",
+            icon: "🤵‍♂️👰‍♀️✨",
             date: "2027-04-11",
             venue: "Magica Autumn, PICC",
             time: "11am-4pm",
@@ -940,6 +961,7 @@ function normalizeEvents(items) {
         const fallback = defaults[index] || defaults[0];
         return {
             name: event?.name || fallback.name || `Event ${index + 1}`,
+            icon: event?.icon || fallback.icon || getEventIcon(event?.name || fallback.name),
             date: isValidDateValue(event?.date) ? event.date : fallback.date,
             venue: event?.venue || fallback.venue || "",
             time: event?.time || fallback.time || "",
@@ -950,6 +972,27 @@ function normalizeEvents(items) {
 
 function isValidDateValue(value) {
     return Boolean(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+}
+
+function isSameDate(value, date) {
+    if (!isValidDateValue(value)) return false;
+    return value === getLocalDateValue(date);
+}
+
+function getLocalDateValue(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+function getEventIcon(name = "") {
+    const normalized = String(name).toLowerCase();
+    if (normalized.includes("engagement")) return "💍";
+    if (normalized.includes("nikah")) return "💍✨";
+    if (normalized.includes("tandang")) return "🤵‍♂️👰‍♀️✨";
+    if (normalized.includes("sanding") || normalized.includes("wedding")) return "🤵‍♂️👰‍♀️";
+    return "✨";
 }
 
 function formatWeekday(value) {
