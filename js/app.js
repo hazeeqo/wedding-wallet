@@ -106,6 +106,14 @@ function cacheElements() {
         "savingsProgress",
         "savingsHint",
         "toast"
+        "days",
+        "hours",
+        "minutes",
+        "seconds",
+        "eventName",
+        "eventIcon",
+        "eventMeta",
+        "journeyDots",
     ].forEach((id) => {
         els[id] = document.getElementById(id);
     });
