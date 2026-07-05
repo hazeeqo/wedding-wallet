@@ -281,7 +281,7 @@ function startSplash() {
             els.splash.remove();
             els.app.classList.remove("hidden");
         }, 300);
-    }, 2500);
+    }, 3000);
 }
 
 async function subscribeToData() {
