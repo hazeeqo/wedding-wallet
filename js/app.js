@@ -130,6 +130,86 @@ function cacheElements() {
     ].forEach((id) => {
         els[id] = document.getElementById(id);
     });
+
+    ensureCountdownFallbackElements();
+
+    [
+        "eventWeekday",
+        "daysLeft",
+        "hoursLeft",
+        "eventSlider",
+        "eventDots",
+        "editEventsButton",
+        "eventsModal",
+        "eventsForm",
+        "eventEditorList"
+    ].forEach((id) => {
+        els[id] = document.getElementById(id);
+    });
+
+    els.daysLeft = els.daysLeft || document.getElementById("days");
+    els.hoursLeft = els.hoursLeft || document.getElementById("hours");
+}
+
+function ensureCountdownFallbackElements() {
+    const countdownPanel = document.querySelector(".countdown-panel");
+    if (!countdownPanel) return;
+
+    if (!document.getElementById("eventWeekday")) {
+        const eventWeekday = document.createElement("span");
+        eventWeekday.id = "eventWeekday";
+        eventWeekday.className = "event-weekday";
+        const eventName = document.getElementById("eventName");
+        eventName?.parentElement?.insertBefore(eventWeekday, eventName);
+    }
+
+    if (!document.getElementById("editEventsButton")) {
+        const button = document.createElement("button");
+        button.id = "editEventsButton";
+        button.className = "ghost-on-dark";
+        button.type = "button";
+        button.textContent = "Edit";
+        countdownPanel.querySelector(".section-head, .countdown-top")?.appendChild(button);
+    }
+
+    if (!document.getElementById("eventSlider")) {
+        const slider = document.createElement("input");
+        slider.id = "eventSlider";
+        slider.className = "event-slider";
+        slider.type = "range";
+        slider.min = "0";
+        slider.max = "3";
+        slider.value = "0";
+        slider.step = "1";
+        (document.getElementById("eventMeta") || countdownPanel).after(slider);
+    }
+
+    if (!document.getElementById("eventDots")) {
+        const dots = document.createElement("div");
+        dots.id = "eventDots";
+        dots.className = "event-dots";
+        document.getElementById("eventSlider")?.after(dots);
+    }
+
+    if (!document.getElementById("eventsModal")) {
+        const modal = document.createElement("div");
+        modal.id = "eventsModal";
+        modal.className = "modal hidden";
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-labelledby", "eventsModalTitle");
+        modal.innerHTML = `
+            <form id="eventsForm" class="modal-sheet">
+                <div class="modal-head">
+                    <h2 id="eventsModalTitle">Edit events</h2>
+                    <button class="ghost-button" type="button" data-close="eventsModal">Close</button>
+                </div>
+                <div id="eventEditorList" class="event-editor-list"></div>
+                <button class="primary-button full" type="submit">Save events</button>
+            </form>
+        `;
+        document.body.appendChild(modal);
+    }
 }
 
 function bindEvents() {
@@ -171,9 +251,9 @@ function bindEvents() {
     els.paymentForm.addEventListener("submit", savePayment);
     els.savingsForm.addEventListener("submit", saveSavings);
     els.eventsForm.addEventListener("submit", saveEvents);
-    els.hasSchedule.addEventListener("change", toggleScheduleBuilder);
-    els.addScheduleButton.addEventListener("click", () => addScheduleRow());
-    els.scheduleRows.addEventListener("click", handleScheduleRowAction);
+    els.hasSchedule?.addEventListener("change", toggleScheduleBuilder);
+    els.addScheduleButton?.addEventListener("click", () => addScheduleRow());
+    els.scheduleRows?.addEventListener("click", handleScheduleRowAction);
 
     els.vendorList.addEventListener("click", handleVendorAction);
     els.paymentList.addEventListener("click", handlePaymentAction);
@@ -624,10 +704,12 @@ function openVendorModal(vendor = null) {
     els.vendorQuote.value = vendor?.quote || "";
     els.vendorDueDate.value = vendor?.dueDate || "";
     els.vendorNotes.value = vendor?.notes || "";
-    els.scheduleRows.innerHTML = "";
-    (Array.isArray(vendor?.schedule) ? vendor.schedule : []).forEach((item) => addScheduleRow(item));
-    els.hasSchedule.checked = Boolean(vendor?.schedule?.length);
-    toggleScheduleBuilder();
+    if (els.scheduleRows && els.hasSchedule) {
+        els.scheduleRows.innerHTML = "";
+        (Array.isArray(vendor?.schedule) ? vendor.schedule : []).forEach((item) => addScheduleRow(item));
+        els.hasSchedule.checked = Boolean(vendor?.schedule?.length);
+        toggleScheduleBuilder();
+    }
     document.getElementById("vendorModalTitle").textContent = vendor ? "Edit vendor" : "Add vendor";
     openModal("vendorModal");
 }
@@ -679,6 +761,8 @@ function closeModal(id) {
 }
 
 function toggleScheduleBuilder() {
+    if (!els.scheduleBuilder || !els.hasSchedule || !els.scheduleRows) return;
+
     els.scheduleBuilder.classList.toggle("hidden", !els.hasSchedule.checked);
     if (els.hasSchedule.checked && !els.scheduleRows.children.length) {
         addScheduleRow();
@@ -686,6 +770,8 @@ function toggleScheduleBuilder() {
 }
 
 function addScheduleRow(item = {}) {
+    if (!els.scheduleRows) return;
+
     const row = document.createElement("div");
     row.className = "schedule-row";
     row.innerHTML = `
@@ -720,7 +806,7 @@ function handleScheduleRowAction(event) {
 }
 
 function collectScheduleRows() {
-    if (!els.hasSchedule.checked) return [];
+    if (!els.hasSchedule?.checked || !els.scheduleRows) return [];
 
     return Array.from(els.scheduleRows.querySelectorAll(".schedule-row"))
         .map((row) => ({
