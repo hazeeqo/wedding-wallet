@@ -31,6 +31,11 @@ body {
         linear-gradient(180deg, #ecf2f3 0, #f7f8fa 34%, #eef3f1 100%);
 }
 
+@font-face {
+    font-family: "WeddingScript";
+    src: local("Edwardian Script ITC"), local("Palace Script MT"), local("Brush Script MT");
+}
+
 button,
 input,
 select,
@@ -52,13 +57,14 @@ button {
     z-index: 20;
     display: grid;
     place-items: center;
-    gap: 18px;
+    gap: 16px;
     align-content: center;
     padding: 24px;
     color: white;
     text-align: center;
-    background: radial-gradient(circle at top, #25515a, #101828 80%);
+    background: radial-gradient(circle at top, #25515a, #101828 64%);
     transition: opacity .3s ease, transform .3s ease;
+    overflow: hidden;
 }
 
 .splash.hide {
@@ -66,13 +72,23 @@ button {
     transform: scale(1.02);
 }
 
+.splash-orbit {
+    position: absolute;
+    width: 238px;
+    height: 238px;
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 999px;
+    animation: breathe 2.8s ease-in-out infinite;
+}
+
 .splash-mark {
+    position: relative;
     display: grid;
     place-items: center;
-    width: 160px;
-    height: 160px;
+    width: 142px;
+    height: 142px;
     border: 1px solid rgba(255, 255, 255, .44);
-    border-radius: 60%;
+    border-radius: 50%;
     background: rgba(255, 255, 255, .1);
     font-family: WeddingScript, "Brush Script MT", cursive;
     font-size: 58px;
@@ -87,24 +103,6 @@ button {
     margin: 0;
 }
 
-.app {
-    width: min(100%, 520px);
-    min-height: 100vh;
-    margin: 0 auto;
-    padding: 18px 16px 34px;
-}
-
-.app-header {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 0 12px;
-    background: linear-gradient(180deg, rgba(243, 246, 248, .98), rgba(243, 246, 248, .86));
-    backdrop-filter: blur(18px);
-}
 .splash-copy {
     position: relative;
     display: grid;
@@ -130,6 +128,25 @@ button {
     color: rgba(255, 255, 255, .82);
     font-size: 14px;
     line-height: 1.45;
+}
+
+.app {
+    width: min(100%, 520px);
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 18px 16px 34px;
+}
+
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0 12px;
+    background: linear-gradient(180deg, rgba(243, 246, 248, .98), rgba(243, 246, 248, .86));
+    backdrop-filter: blur(18px);
 }
 
 .eyebrow,
@@ -175,6 +192,7 @@ p {
 }
 
 .summary-panel,
+.countdown-panel,
 .savings-card,
 .form-card,
 .vendor-card,
@@ -191,6 +209,111 @@ p {
     background:
         linear-gradient(145deg, rgba(17, 122, 122, .92), rgba(21, 34, 56, .98)),
         var(--navy);
+}
+
+.countdown-panel {
+    margin-top: 12px;
+    padding: 16px;
+    color: white;
+    background:
+        linear-gradient(145deg, rgba(201, 67, 92, .9), rgba(21, 34, 56, .98)),
+        var(--navy);
+}
+
+.countdown-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.countdown-top span {
+    display: block;
+    color: rgba(255, 255, 255, .72);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.countdown-top h2 {
+    margin: 5px 0 4px;
+    font-size: 22px;
+}
+
+.countdown-top p {
+    margin: 0;
+    color: rgba(255, 255, 255, .78);
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.ghost-on-dark {
+    min-height: 36px;
+    border: 1px solid rgba(255, 255, 255, .26);
+    border-radius: 8px;
+    padding: 0 12px;
+    color: white;
+    background: rgba(255, 255, 255, .12);
+    font-weight: 800;
+}
+
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.countdown-grid div {
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .12);
+}
+
+.countdown-grid strong,
+.countdown-grid span {
+    display: block;
+}
+
+.countdown-grid strong {
+    font-size: 34px;
+    line-height: 1;
+}
+
+.countdown-grid span {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, .72);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.event-slider {
+    min-height: 28px;
+    padding: 0;
+    accent-color: #f2c078;
+    background: transparent;
+}
+
+.event-dots {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.event-dot {
+    overflow: hidden;
+    color: rgba(255, 255, 255, .68);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.event-dot.active {
+    color: white;
 }
 
 .summary-top {
@@ -245,6 +368,15 @@ p {
 }
 
 .progress-fill.savings {
+    background: linear-gradient(90deg, var(--teal), var(--green));
+}
+
+.vendor-progress {
+    margin: 10px 0;
+    background: #eef2f6;
+}
+
+.vendor-progress .progress-fill {
     background: linear-gradient(90deg, var(--teal), var(--green));
 }
 
@@ -511,6 +643,74 @@ label {
     font-weight: 800;
 }
 
+.checkbox-row {
+    display: flex;
+    grid-template-columns: none;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+}
+
+.checkbox-row input {
+    width: 20px;
+    min-height: 20px;
+    accent-color: var(--teal);
+}
+
+.schedule-builder {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #f8fafb;
+}
+
+.inline-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.small {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 13px;
+}
+
+.schedule-rows,
+.event-editor-list {
+    display: grid;
+    gap: 10px;
+}
+
+.schedule-row,
+.event-editor-card {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+}
+
+.schedule-row-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.schedule-due {
+    margin: 0 0 10px;
+    padding: 10px;
+    border-radius: 8px;
+    color: #7a4b09;
+    background: #fff4df;
+    font-size: 13px;
+    font-weight: 800;
+}
+
 .savings-card {
     margin-top: 12px;
 }
@@ -585,6 +785,42 @@ label {
     font-weight: 800;
 }
 
+@keyframes breathe {
+    0%, 100% {
+        transform: scale(.94);
+        opacity: .55;
+    }
+
+    50% {
+        transform: scale(1.08);
+        opacity: .9;
+    }
+}
+
+@keyframes floatIn {
+    from {
+        transform: translateY(10px) scale(.92);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 @media (min-width: 680px) {
     .app {
         padding-top: 26px;
@@ -609,8 +845,11 @@ label {
     }
 
     .money-row {
-        grid-template-columns: 1fr;
         align-items: start;
+    }
+
+    .schedule-row-grid {
+        grid-template-columns: 1fr;
     }
 
     .action-row {
@@ -621,52 +860,4 @@ label {
     .action-row a {
         flex: 1 1 42%;
     }
-}
-
-.countdown-panel{
-    margin-top:16px;
-    padding:18px;
-    border:1px solid rgba(16,24,40,.08);
-    border-radius:8px;
-    background:#fff;
-    box-shadow:0 8px 24px rgba(16,24,40,.08);
-}
-
-.countdown{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px;
-    margin:18px 0;
-}
-
-.countdown-box{
-    text-align:center;
-    padding:14px 8px;
-    border-radius:8px;
-    background:#f3f6f8;
-}
-
-.countdown-box strong{
-    display:block;
-    font-size:28px;
-    color:var(--navy);
-}
-
-.countdown-box span{
-    font-size:12px;
-    color:var(--muted);
-}
-
-.journey-dots{
-    margin:14px 0;
-    text-align:center;
-    font-size:18px;
-    letter-spacing:8px;
-    color:var(--teal);
-}
-
-#eventMeta{
-    margin:0;
-    font-size:13px;
-    color:var(--muted);
 }
