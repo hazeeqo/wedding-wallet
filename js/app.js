@@ -143,6 +143,8 @@ function cacheElements() {
         "checklistSection",
         "checklistOwner",
         "checklistNote",
+        "deleteChecklistItemButton",
+        "celebrationLayer",
         "toast"
     ].forEach((id) => {
         els[id] = document.getElementById(id);
@@ -269,6 +271,7 @@ function bindEvents() {
     els.paymentForm.addEventListener("submit", savePayment);
     els.savingsForm.addEventListener("submit", saveSavings);
     els.checklistForm.addEventListener("submit", saveChecklistItem);
+    els.deleteChecklistItemButton.addEventListener("click", deleteChecklistItem);
     els.eventsForm.addEventListener("submit", saveEvents);
     els.hasSchedule?.addEventListener("change", toggleScheduleBuilder);
     els.addScheduleButton?.addEventListener("click", () => addScheduleRow());
@@ -382,7 +385,8 @@ function renderChecklist() {
     els.checklistSections.innerHTML = sections.map((section) => {
         const items = state.checklistItems.filter((item) => item.section === section);
         const done = items.filter((item) => item.completed).length;
-        return `<section class="checklist-section"><div class="checklist-section-head"><div><h3>${section}</h3><span>${done}/${items.length} completed</span></div><button type="button" class="section-add" data-action="add-checklist" data-section="${section}" aria-label="Add ${section} task">+</button></div><div class="task-list">${items.length ? items.map(renderChecklistItem).join("") : `<div class="checklist-empty">No tasks yet — add the first one.</div>`}</div></section>`;
+        const sectionPercent = items.length ? Math.round((done / items.length) * 100) : 0;
+        return `<section class="checklist-section section-${section.toLowerCase()}"><div class="checklist-section-head"><div class="section-label"><h3>${section}</h3><span>${done}/${items.length} completed</span><div class="section-progress" aria-label="${section} ${sectionPercent}% complete"><div style="width:${sectionPercent}%"></div></div></div><button type="button" class="section-add" data-action="add-checklist" data-section="${section}" aria-label="Add ${section} task">+</button></div><div class="task-list">${items.length ? items.map(renderChecklistItem).join("") : `<div class="checklist-empty">No tasks yet — add the first one.</div>`}</div></section>`;
     }).join("");
 }
 
@@ -693,6 +697,7 @@ async function savePayment(event) {
         closeModal("paymentModal");
         els.paymentForm.reset();
         setToday();
+        launchPaymentCelebration();
         showToast("Payment saved");
     } catch (error) {
         showToast(error.message || "Could not save payment");
@@ -737,6 +742,21 @@ async function saveChecklistItem(event) {
         showToast(error.message || "Could not save checklist task");
     } finally {
         setBusy(els.checklistForm, false);
+    }
+}
+
+async function deleteChecklistItem() {
+    const id = els.checklistItemId.value;
+    if (!id || !ensureFirebaseReady()) return;
+    if (!window.confirm("Delete this checklist task?")) return;
+    try {
+        await firebase.deleteDoc(firebase.doc(firebase.db, "checklistItems", id));
+        closeModal("checklistModal");
+        els.checklistForm.reset();
+        els.checklistItemId.value = "";
+        showToast("Checklist task deleted");
+    } catch (error) {
+        showToast(error.message || "Could not delete checklist task");
     }
 }
 
@@ -806,6 +826,7 @@ function openChecklistModal(item = null, section = "Nikah") {
     els.checklistSection.value = item?.section || section;
     els.checklistOwner.value = item?.owner || "Haziq & Aina";
     els.checklistNote.value = item?.note || "";
+    els.deleteChecklistItemButton.classList.toggle("hidden", !item);
     document.getElementById("checklistModalTitle").textContent = item ? "Edit checklist task" : "Add checklist task";
     openModal("checklistModal");
 }
@@ -989,6 +1010,22 @@ async function handleChecklistAction(event) {
         } catch (error) { showToast(error.message || "Could not update checklist task"); }
     }
     if (button.dataset.action === "edit-checklist") openChecklistModal(item);
+}
+
+function launchPaymentCelebration() {
+    if (!els.celebrationLayer) return;
+    els.celebrationLayer.replaceChildren();
+    const colors = ["#f4c95d", "#ee7f97", "#70c7bd", "#fff", "#c9435c"];
+    for (let index = 0; index < 22; index += 1) {
+        const spark = document.createElement("span");
+        spark.className = "celebration-spark";
+        spark.style.setProperty("--x", `${(Math.random() - .5) * 280}px`);
+        spark.style.setProperty("--y", `${-80 - Math.random() * 180}px`);
+        spark.style.setProperty("--delay", `${Math.random() * .22}s`);
+        spark.style.setProperty("--color", colors[index % colors.length]);
+        els.celebrationLayer.appendChild(spark);
+    }
+    window.setTimeout(() => els.celebrationLayer.replaceChildren(), 1300);
 }
 
 function ensureFirebaseReady() {
