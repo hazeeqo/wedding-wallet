@@ -911,19 +911,26 @@ label {
 }
 
 /* Wedding checklist */
-.tabs { grid-template-columns: repeat(4, 1fr); }
+.tabs { grid-template-columns: repeat(3, 1fr); }
 .checklist-head { align-items: flex-end; }
 .checklist-overview { margin-bottom: 14px; padding: 13px 14px; border: 1px solid #d8e8e4; border-radius: 8px; background: #f5fbf9; }
 .checklist-overview .progress-track { height: 7px; margin: 0 0 8px; background: #dceee9; }
 .checklist-progress { background: linear-gradient(90deg, var(--teal), #63c49c); }
 .checklist-overview span, .checklist-section-head span { color: var(--muted); font-size: 12px; font-weight: 700; }
 .checklist-sections { display: grid; gap: 12px; }
-.checklist-section { overflow: hidden; border: 1px solid rgba(16,24,40,.08); border-radius: 8px; background: var(--surface); box-shadow: 0 8px 24px rgba(16,24,40,.06); }
-.checklist-section-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg,#f8fbfb,#fff); }
+.checklist-section { overflow: hidden; border: 1px solid rgba(16,24,40,.08); border-radius: 12px; background: var(--surface); box-shadow: 0 8px 24px rgba(16,24,40,.06); }
+.checklist-section-head { position: relative; display: flex; align-items: center; justify-content: space-between; overflow: hidden; padding: 13px 14px; border-bottom: 1px solid var(--line); isolation: isolate; }
+.checklist-section-head::after { position: absolute; inset: 0; z-index: -1; content: ""; opacity: .52; background-image: radial-gradient(circle, currentColor 1.1px, transparent 1.6px), radial-gradient(circle, currentColor 1.3px, transparent 1.8px); background-position: 8px 8px, 24px 18px; background-size: 32px 32px, 43px 43px; animation: headerSprinkles 7s linear infinite; }
+.section-nikah .checklist-section-head { color: #7a5a31; background: linear-gradient(105deg,#fff8e9,#f7ead0); }
+.section-sanding .checklist-section-head { color: #9c365f; background: linear-gradient(105deg,#ffedf3,#f8cddd); }
+.section-tandang .checklist-section-head { color: #6f2938; background: linear-gradient(105deg,#f4dce0,#dcaab5); }
 .checklist-section-head h3, .task-item h4 { margin: 0; }
 .checklist-section-head h3 { font-size: 16px; }
 .checklist-section-head span { display: block; margin-top: 3px; }
-.section-add { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; color: white; background: var(--teal); font-size: 22px; line-height: 1; }
+.section-progress { width: min(190px, 52vw); height: 6px; margin-top: 9px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.6); box-shadow: inset 0 1px 2px rgba(16,24,40,.12); }
+.section-progress div { height: 100%; border-radius: inherit; transition: width .35s ease; }
+.section-nikah .section-progress div { background: #bc8b41; }.section-sanding .section-progress div { background: #d4507e; }.section-tandang .section-progress div { background: #872e46; }
+.section-add { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 50%; color: white; background: rgba(21,34,56,.82); font-size: 22px; line-height: 1; box-shadow: 0 5px 12px rgba(16,24,40,.16); }
 .task-list { display: grid; }
 .task-item { display: grid; grid-template-columns: 28px minmax(0,1fr) 30px; gap: 10px; align-items: start; padding: 12px 14px; }
 .task-item + .task-item { border-top: 1px solid var(--line); }
@@ -939,4 +946,8 @@ label {
 .task-edit:hover { color: var(--teal); background: #eef7f5; }
 .checklist-empty { padding: 13px 14px; color: var(--muted); font-size: 13px; font-style: italic; }
 .optional { font-weight: 500; }
+.celebration-layer { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+.celebration-spark { position: absolute; bottom: 42%; left: 50%; width: 9px; height: 9px; border-radius: 50%; background: var(--color); box-shadow: 0 0 10px var(--color); animation: paymentFirework 1.2s ease-out var(--delay) forwards; }
+@keyframes paymentFirework { 0% { transform: translate(0,0) scale(.3); opacity: 1; } 75% { opacity: 1; } 100% { transform: translate(var(--x),var(--y)) scale(1.4); opacity: 0; } }
+@keyframes headerSprinkles { from { background-position: 8px 8px, 24px 18px; } to { background-position: 40px 40px, -19px 61px; } }
 @media (max-width: 390px) { .tabs { gap: 3px; padding: 3px; } .tab { min-height: 38px; font-size: 12px; } }
