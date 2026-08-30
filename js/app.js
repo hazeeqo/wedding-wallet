@@ -1,52 +1,17 @@
 const state = {
     vendors: [],
     payments: [],
-    events: [
-        {
-            name: "Engagement Day",
-            icon: "💍",
-            date: "2026-12-19",
-            venue: "Aina's House",
-            time: "8-11pm",
-            startTime: "20:00"
-        },
-        {
-            name: "Nikah Day",
-            icon: "💍✨",
-            date: "2027-04-02",
-            venue: "Lantera Cahaya SPK",
-            time: "7-11pm",
-            startTime: "19:00"
-        },
-        {
-            name: "Majlis Sanding",
-            icon: "🤵‍♂️👰‍♀️",
-            date: "2027-04-03",
-            venue: "Grand Asiana Hall, PJ",
-            time: "11am-4pm",
-            startTime: "11:00"
-        },
-        {
-            name: "Majlis Tandang",
-            icon: "🤵‍♂️👰‍♀️✨",
-            date: "2027-04-11",
-            venue: "Magica Autumn, PICC",
-            time: "11am-4pm",
-            startTime: "11:00"
-        }
-    ],
-    activeEventIndex: 0,
     savings: {
         goal: 0,
         current: 0,
         monthlyTarget: 0
     },
+    checklistItems: [],
     search: "",
     category: "all"
 };
 
 let firebase = null;
-let countdownTimer = null;
 
 const money = new Intl.NumberFormat("en-MY", {
     style: "currency",
@@ -60,8 +25,6 @@ function initializeAppUi() {
     cacheElements();
     bindEvents();
     setToday();
-    renderCountdown();
-    startCountdownTimer();
     startSplash();
     subscribeToData();
 }
@@ -82,14 +45,6 @@ function cacheElements() {
         "totalQuoted",
         "totalPaid",
         "savingsSaved",
-        "eventWeekday",
-        "eventName",
-        "eventMeta",
-        "daysLeft",
-        "hoursLeft",
-        "eventSlider",
-        "eventDots",
-        "editEventsButton",
         "vendorCount",
         "vendorSearch",
         "categoryFilter",
@@ -103,10 +58,6 @@ function cacheElements() {
         "vendorQuote",
         "vendorDueDate",
         "invoiceFile",
-        "hasSchedule",
-        "scheduleBuilder",
-        "addScheduleButton",
-        "scheduleRows",
         "vendorNotes",
         "paymentModal",
         "paymentForm",
@@ -115,7 +66,6 @@ function cacheElements() {
         "paymentDate",
         "paymentMethod",
         "receiptFile",
-        "paymentPaidBy",
         "paymentNote",
         "savingsForm",
         "savingsGoal",
@@ -125,96 +75,21 @@ function cacheElements() {
         "savingsPercent",
         "savingsProgress",
         "savingsHint",
-        "eventsModal",
-        "eventsForm",
-        "eventEditorList",
-        "vendorPaymentsModal",
-        "vendorPaymentsTitle",
-        "vendorPaymentHistory",
-        "toast"
+        "toast",
+        "checklistProgress",
+        "checklistProgressBar",
+        "checklistProgressText",
+        "checklistSections",
+        "checklistModal",
+        "checklistForm",
+        "checklistItemId",
+        "checklistTask",
+        "checklistSection",
+        "checklistOwner",
+        "checklistNote"
     ].forEach((id) => {
         els[id] = document.getElementById(id);
     });
-
-    ensureCountdownFallbackElements();
-
-    [
-        "eventWeekday",
-        "daysLeft",
-        "hoursLeft",
-        "eventSlider",
-        "eventDots",
-        "editEventsButton",
-        "eventsModal",
-        "eventsForm",
-        "eventEditorList"
-    ].forEach((id) => {
-        els[id] = document.getElementById(id);
-    });
-
-    els.daysLeft = els.daysLeft || document.getElementById("days");
-    els.hoursLeft = els.hoursLeft || document.getElementById("hours");
-}
-
-function ensureCountdownFallbackElements() {
-    const countdownPanel = document.querySelector(".countdown-panel");
-    if (!countdownPanel) return;
-
-    if (!document.getElementById("eventWeekday")) {
-        const eventWeekday = document.createElement("span");
-        eventWeekday.id = "eventWeekday";
-        eventWeekday.className = "event-weekday";
-        const eventName = document.getElementById("eventName");
-        eventName?.parentElement?.insertBefore(eventWeekday, eventName);
-    }
-
-    if (!document.getElementById("editEventsButton")) {
-        const button = document.createElement("button");
-        button.id = "editEventsButton";
-        button.className = "ghost-on-dark";
-        button.type = "button";
-        button.textContent = "Edit";
-        countdownPanel.querySelector(".section-head, .countdown-top")?.appendChild(button);
-    }
-
-    if (!document.getElementById("eventSlider")) {
-        const slider = document.createElement("input");
-        slider.id = "eventSlider";
-        slider.className = "event-slider";
-        slider.type = "range";
-        slider.min = "0";
-        slider.max = "3";
-        slider.value = "0";
-        slider.step = "1";
-        (document.getElementById("eventMeta") || countdownPanel).after(slider);
-    }
-
-    if (!document.getElementById("eventDots")) {
-        const dots = document.createElement("div");
-        dots.id = "eventDots";
-        dots.className = "event-dots";
-        document.getElementById("eventSlider")?.after(dots);
-    }
-
-    if (!document.getElementById("eventsModal")) {
-        const modal = document.createElement("div");
-        modal.id = "eventsModal";
-        modal.className = "modal hidden";
-        modal.setAttribute("role", "dialog");
-        modal.setAttribute("aria-modal", "true");
-        modal.setAttribute("aria-labelledby", "eventsModalTitle");
-        modal.innerHTML = `
-            <form id="eventsForm" class="modal-sheet">
-                <div class="modal-head">
-                    <h2 id="eventsModalTitle">Edit events</h2>
-                    <button class="ghost-button" type="button" data-close="eventsModal">Close</button>
-                </div>
-                <div id="eventEditorList" class="event-editor-list"></div>
-                <button class="primary-button full" type="submit">Save events</button>
-            </form>
-        `;
-        document.body.appendChild(modal);
-    }
 }
 
 function bindEvents() {
@@ -225,18 +100,7 @@ function bindEvents() {
     document.getElementById("addVendorButton").addEventListener("click", () => openVendorModal());
     document.getElementById("addPaymentButton").addEventListener("click", () => openPaymentModal());
     document.getElementById("quickAddPayment").addEventListener("click", () => openPaymentModal());
-    els.editEventsButton.addEventListener("click", openEventsModal);
-    els.eventSlider.addEventListener("input", () => {
-        state.activeEventIndex = Number(els.eventSlider.value);
-        renderCountdown();
-    });
-    els.eventDots.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-event-index]");
-        if (!button) return;
-
-        state.activeEventIndex = Number(button.dataset.eventIndex);
-        renderCountdown();
-    });
+    document.getElementById("addChecklistItemButton").addEventListener("click", () => openChecklistModal());
 
     document.querySelectorAll("[data-close]").forEach((button) => {
         button.addEventListener("click", () => closeModal(button.dataset.close));
@@ -255,13 +119,11 @@ function bindEvents() {
     els.vendorForm.addEventListener("submit", saveVendor);
     els.paymentForm.addEventListener("submit", savePayment);
     els.savingsForm.addEventListener("submit", saveSavings);
-    els.eventsForm.addEventListener("submit", saveEvents);
-    els.hasSchedule?.addEventListener("change", toggleScheduleBuilder);
-    els.addScheduleButton?.addEventListener("click", () => addScheduleRow());
-    els.scheduleRows?.addEventListener("click", handleScheduleRowAction);
+    els.checklistForm.addEventListener("submit", saveChecklistItem);
 
     els.vendorList.addEventListener("click", handleVendorAction);
     els.paymentList.addEventListener("click", handlePaymentAction);
+    els.checklistSections.addEventListener("click", handleChecklistAction);
 
     document.querySelectorAll(".modal").forEach((modal) => {
         modal.addEventListener("click", (event) => {
@@ -271,7 +133,7 @@ function bindEvents() {
 }
 
 function setToday() {
-    els.paymentDate.value = getLocalDateValue(new Date());
+    els.paymentDate.value = new Date().toISOString().slice(0, 10);
 }
 
 function startSplash() {
@@ -281,7 +143,7 @@ function startSplash() {
             els.splash.remove();
             els.app.classList.remove("hidden");
         }, 300);
-    }, 3000);
+    }, 700);
 }
 
 async function subscribeToData() {
@@ -322,12 +184,10 @@ async function subscribeToData() {
         }
     });
 
-    firebase.onSnapshot(firebase.doc(firebase.db, "settings", "events"), (snapshot) => {
-        if (snapshot.exists() && Array.isArray(snapshot.data().items)) {
-            state.events = normalizeEvents(snapshot.data().items);
-            state.activeEventIndex = Math.min(state.activeEventIndex, state.events.length - 1);
-            render();
-        }
+    firebase.onSnapshot(firebase.collection(firebase.db, "checklistItems"), (snapshot) => {
+        state.checklistItems = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+        state.checklistItems.sort((a, b) => Number(a.completed) - Number(b.completed) || String(a.task || "").localeCompare(String(b.task || "")));
+        render();
     });
 }
 
@@ -342,11 +202,50 @@ function switchScreen(id) {
 
 function render() {
     renderSummary();
-    renderCountdown();
     renderVendors();
     renderPayments();
     renderSavings();
+    renderChecklist();
     fillPaymentVendorOptions();
+}
+
+function renderChecklist() {
+    const sections = ["Nikah", "Sanding", "Tandang"];
+    const total = state.checklistItems.length;
+    const completed = state.checklistItems.filter((item) => item.completed).length;
+    const percent = total ? Math.round((completed / total) * 100) : 0;
+
+    els.checklistProgress.textContent = `${completed} of ${total} complete`;
+    els.checklistProgressBar.style.width = `${percent}%`;
+    els.checklistProgressText.textContent = total ? `${percent}% ready for the big day` : "Add your first task whenever you're ready.";
+
+    els.checklistSections.innerHTML = sections.map((section) => {
+        const items = state.checklistItems.filter((item) => item.section === section);
+        const done = items.filter((item) => item.completed).length;
+        return `
+            <section class="checklist-section">
+                <div class="checklist-section-head">
+                    <div><h3>${section}</h3><span>${done}/${items.length} completed</span></div>
+                    <button type="button" class="section-add" data-action="add-checklist" data-section="${section}" aria-label="Add ${section} task">+</button>
+                </div>
+                <div class="task-list">
+                    ${items.length ? items.map(renderChecklistItem).join("") : `<div class="checklist-empty">No tasks yet — add the first one.</div>`}
+                </div>
+            </section>`;
+    }).join("");
+}
+
+function renderChecklistItem(item) {
+    const ownerClass = item.owner === "Haziq" ? "haziq" : item.owner === "Aina" ? "aina" : "together";
+    return `
+        <article class="task-item ${item.completed ? "is-complete" : ""}">
+            <button class="task-check" type="button" data-action="toggle-checklist" data-id="${item.id}" aria-label="Mark ${escapeAttr(item.task || "task")} as ${item.completed ? "incomplete" : "complete"}" aria-pressed="${Boolean(item.completed)}">${item.completed ? "✓" : ""}</button>
+            <div class="task-content">
+                <h4>${escapeHtml(item.task || "Untitled task")}</h4>
+                <div class="task-meta"><span class="owner-tag ${ownerClass}">${escapeHtml(item.owner || "Haziq & Aina")}</span>${item.note ? `<span class="task-note">${escapeHtml(item.note)}</span>` : ""}</div>
+            </div>
+            <button class="task-edit" type="button" data-action="edit-checklist" data-id="${item.id}" aria-label="Edit ${escapeAttr(item.task || "task")}">•••</button>
+        </article>`;
 }
 
 function getPaidByVendor() {
@@ -359,69 +258,6 @@ function getPaidByVendor() {
 
 function getVendorById(id) {
     return state.vendors.find((vendor) => vendor.id === id);
-}
-
-function getEventDateTime(event) {
-    const date = event?.date || getLocalDateValue(new Date());
-    const time = event?.startTime || "00:00";
-    const target = new Date(`${date}T${time}:00`);
-    return Number.isNaN(target.getTime()) ? new Date() : target;
-}
-
-function startCountdownTimer() {
-    window.clearInterval(countdownTimer);
-    countdownTimer = window.setInterval(renderCountdown, 60000);
-}
-
-function renderCountdown() {
-    if (!els.eventName) return;
-
-    state.events = normalizeEvents(state.events);
-    const event = state.events[state.activeEventIndex] || state.events[0];
-    const target = getEventDateTime(event);
-    const now = new Date();
-    const isEventDay = isSameDate(event.date, now);
-    const diffMs = Math.max(target.getTime() - now.getTime(), 0);
-    const totalHours = Math.floor(diffMs / 36e5);
-    const days = isEventDay ? 0 : Math.floor(totalHours / 24);
-    const hours = isEventDay ? 0 : totalHours % 24;
-
-    els.eventSlider.max = String(state.events.length - 1);
-    els.eventSlider.value = String(state.activeEventIndex);
-    document.querySelector(".countdown-panel")?.classList.toggle("d-day", isEventDay);
-    els.eventWeekday.textContent = isEventDay ? "D-Day - Today is the day" : `${formatWeekday(event.date)} - ${formatDate(event.date)}`;
-    els.eventName.textContent = `${event.icon || getEventIcon(event.name)} ${event.name || "Wedding event"}`;
-    els.eventMeta.textContent = isEventDay
-        ? `Today is the day. ${[event.venue, event.time].filter(Boolean).join(" - ")}`
-        : [event.venue, event.time].filter(Boolean).join(" - ") || "Details coming soon";
-    els.daysLeft.textContent = String(days);
-    els.hoursLeft.textContent = String(hours);
-    els.eventDots.innerHTML = state.events.map((item, index) => (
-        `<button class="event-dot ${index === state.activeEventIndex ? "active" : ""}" type="button" data-event-index="${index}">${escapeHtml(`${item.icon || getEventIcon(item.name)} ${item.name}`)}</button>`
-    )).join("");
-}
-
-function getNextScheduledPayment(vendor, paid) {
-    const schedule = Array.isArray(vendor.schedule) ? vendor.schedule : [];
-    let remainingPaid = Number(paid || 0);
-
-    return schedule
-        .map((item) => ({
-            amount: Number(item.amount || 0),
-            dueDate: item.dueDate || "",
-            details: item.details || ""
-        }))
-        .filter((item) => item.amount > 0)
-        .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
-        .map((item) => {
-            const covered = Math.min(item.amount, remainingPaid);
-            remainingPaid = Math.max(remainingPaid - item.amount, 0);
-            return {
-                ...item,
-                remaining: item.amount - covered
-            };
-        })
-        .find((item) => item.remaining > 0);
 }
 
 function renderSummary() {
@@ -459,7 +295,6 @@ function renderVendors() {
         const paid = Number(paidByVendor[vendor.id] || 0);
         const remaining = Math.max(quote - paid, 0);
         const percent = quote > 0 ? Math.min((paid / quote) * 100, 100) : 0;
-        const nextPayment = getNextScheduledPayment(vendor, paid);
         const invoiceLink = vendor.invoiceUrl
             ? `<a href="${escapeAttr(vendor.invoiceUrl)}" target="_blank" rel="noopener">Invoice</a>`
             : "";
@@ -481,15 +316,10 @@ function renderVendors() {
                     <div><span>Paid</span><strong>${formatMoney(paid)}</strong></div>
                     <div><span>Progress</span><strong>${Math.round(percent)}%</strong></div>
                 </div>
-                <div class="progress-track vendor-progress">
-                    <div class="progress-fill" style="width: ${percent}%"></div>
-                </div>
-                ${nextPayment ? `<p class="schedule-due">Next due: ${formatMoney(nextPayment.remaining)} on ${formatDate(nextPayment.dueDate)}${nextPayment.details ? ` - ${escapeHtml(nextPayment.details)}` : ""}</p>` : ""}
-                ${!nextPayment && vendor.dueDate ? `<span class="meta">Due ${formatDate(vendor.dueDate)}</span>` : ""}
+                ${vendor.dueDate ? `<span class="meta">Due ${formatDate(vendor.dueDate)}</span>` : ""}
                 ${vendor.notes ? `<p class="notes">${escapeHtml(vendor.notes)}</p>` : ""}
                 <div class="action-row">
                     <button type="button" data-action="pay" data-id="${vendor.id}">Pay</button>
-                    <button type="button" data-action="history" data-id="${vendor.id}">Track</button>
                     <button type="button" data-action="edit" data-id="${vendor.id}">Edit</button>
                     ${invoiceLink}
                     <button type="button" data-action="delete" data-id="${vendor.id}">Delete</button>
@@ -517,7 +347,6 @@ function renderPayments() {
                     <div>
                         <h3>${escapeHtml(vendor?.name || "Vendor removed")}</h3>
                         <span class="meta">${formatDate(payment.date)} - ${escapeHtml(payment.method || "Payment")}</span>
-                        ${payment.paidBy ? `<span class="meta">Paid by ${escapeHtml(payment.paidBy)}</span>` : ""}
                     </div>
                     <div class="amount">${formatMoney(payment.amount || 0)}</div>
                 </div>
@@ -586,7 +415,6 @@ async function saveVendor(event) {
             category: els.vendorCategory.value,
             quote: Number(els.vendorQuote.value || 0),
             dueDate: els.vendorDueDate.value,
-            schedule: collectScheduleRows(),
             notes: els.vendorNotes.value.trim(),
             updatedAt: firebase.serverTimestamp()
         };
@@ -634,9 +462,8 @@ async function savePayment(event) {
         const data = {
             vendorId: els.paymentVendor.value,
             amount: Number(els.paymentAmount.value || 0),
-            date: els.paymentDate.value || getLocalDateValue(new Date()),
+            date: els.paymentDate.value || new Date().toISOString().slice(0, 10),
             method: els.paymentMethod.value,
-            paidBy: els.paymentPaidBy?.value || "Haziq",
             note: els.paymentNote.value.trim(),
             createdAt: firebase.serverTimestamp()
         };
@@ -674,30 +501,40 @@ async function saveSavings(event) {
     showToast("Savings updated");
 }
 
-async function saveEvents(event) {
+async function saveChecklistItem(event) {
     event.preventDefault();
     if (!ensureFirebaseReady()) return;
 
-    const items = Array.from(els.eventEditorList.querySelectorAll(".event-editor-card")).map((card, index) => ({
-        name: card.querySelector(`[name="eventName${index}"]`).value.trim(),
-        icon: card.querySelector(`[name="eventIcon${index}"]`).value.trim(),
-        date: card.querySelector(`[name="eventDate${index}"]`).value,
-        venue: card.querySelector(`[name="eventVenue${index}"]`).value.trim(),
-        time: card.querySelector(`[name="eventTime${index}"]`).value.trim(),
-        startTime: card.querySelector(`[name="eventStartTime${index}"]`).value
-    }));
-
-    state.events = normalizeEvents(items);
-    state.activeEventIndex = Math.min(state.activeEventIndex, state.events.length - 1);
-    renderCountdown();
-
-    await firebase.setDoc(firebase.doc(firebase.db, "settings", "events"), {
-        items: state.events,
+    const id = els.checklistItemId.value;
+    const data = {
+        task: els.checklistTask.value.trim(),
+        section: els.checklistSection.value,
+        owner: els.checklistOwner.value,
+        note: els.checklistNote.value.trim(),
         updatedAt: firebase.serverTimestamp()
-    }, { merge: true });
+    };
 
-    closeModal("eventsModal");
-    showToast("Events updated");
+    setBusy(els.checklistForm, true);
+    try {
+        if (id) {
+            await firebase.updateDoc(firebase.doc(firebase.db, "checklistItems", id), data);
+            showToast("Checklist task updated");
+        } else {
+            await firebase.addDoc(firebase.collection(firebase.db, "checklistItems"), {
+                ...data,
+                completed: false,
+                createdAt: firebase.serverTimestamp()
+            });
+            showToast("Checklist task added");
+        }
+        closeModal("checklistModal");
+        els.checklistForm.reset();
+        els.checklistItemId.value = "";
+    } catch (error) {
+        showToast(error.message || "Could not save checklist task");
+    } finally {
+        setBusy(els.checklistForm, false);
+    }
 }
 
 async function uploadFile(file, path) {
@@ -716,12 +553,6 @@ function openVendorModal(vendor = null) {
     els.vendorQuote.value = vendor?.quote || "";
     els.vendorDueDate.value = vendor?.dueDate || "";
     els.vendorNotes.value = vendor?.notes || "";
-    if (els.scheduleRows && els.hasSchedule) {
-        els.scheduleRows.innerHTML = "";
-        (Array.isArray(vendor?.schedule) ? vendor.schedule : []).forEach((item) => addScheduleRow(item));
-        els.hasSchedule.checked = Boolean(vendor?.schedule?.length);
-        toggleScheduleBuilder();
-    }
     document.getElementById("vendorModalTitle").textContent = vendor ? "Edit vendor" : "Add vendor";
     openModal("vendorModal");
 }
@@ -733,39 +564,15 @@ function openPaymentModal(vendorId = "") {
     openModal("paymentModal");
 }
 
-function openEventsModal() {
-    state.events = normalizeEvents(state.events);
-    els.eventEditorList.innerHTML = state.events.map((event, index) => `
-        <section class="event-editor-card">
-            <label>
-                Event name
-                <input name="eventName${index}" value="${escapeAttr(event.name)}" required>
-            </label>
-            <label>
-                Icon
-                <input name="eventIcon${index}" value="${escapeAttr(event.icon || getEventIcon(event.name))}">
-            </label>
-            <label>
-                Date
-                <input name="eventDate${index}" type="date" value="${escapeAttr(event.date)}" required>
-            </label>
-            <label>
-                Venue
-                <input name="eventVenue${index}" value="${escapeAttr(event.venue)}">
-            </label>
-            <div class="schedule-row-grid">
-                <label>
-                    Display time
-                    <input name="eventTime${index}" value="${escapeAttr(event.time)}" placeholder="11am-4pm">
-                </label>
-                <label>
-                    Start time
-                    <input name="eventStartTime${index}" type="time" value="${escapeAttr(event.startTime)}">
-                </label>
-            </div>
-        </section>
-    `).join("");
-    openModal("eventsModal");
+function openChecklistModal(item = null, section = "Nikah") {
+    els.checklistForm.reset();
+    els.checklistItemId.value = item?.id || "";
+    els.checklistTask.value = item?.task || "";
+    els.checklistSection.value = item?.section || section;
+    els.checklistOwner.value = item?.owner || "Haziq & Aina";
+    els.checklistNote.value = item?.note || "";
+    document.getElementById("checklistModalTitle").textContent = item ? "Edit checklist task" : "Add checklist task";
+    openModal("checklistModal");
 }
 
 function openModal(id) {
@@ -774,82 +581,6 @@ function openModal(id) {
 
 function closeModal(id) {
     document.getElementById(id).classList.add("hidden");
-}
-
-function toggleScheduleBuilder() {
-    if (!els.scheduleBuilder || !els.hasSchedule || !els.scheduleRows) return;
-
-    els.scheduleBuilder.classList.toggle("hidden", !els.hasSchedule.checked);
-    if (els.hasSchedule.checked && !els.scheduleRows.children.length) {
-        addScheduleRow();
-    }
-}
-
-function addScheduleRow(item = {}) {
-    if (!els.scheduleRows) return;
-
-    const row = document.createElement("div");
-    row.className = "schedule-row";
-    row.innerHTML = `
-        <div class="schedule-row-grid">
-            <label>
-                Amount
-                <input name="scheduleAmount" type="number" min="0" step="0.01" value="${escapeAttr(item.amount || "")}">
-            </label>
-            <label>
-                Due date
-                <input name="scheduleDueDate" type="date" value="${escapeAttr(item.dueDate || "")}">
-            </label>
-        </div>
-        <label>
-            Details
-            <input name="scheduleDetails" value="${escapeAttr(item.details || "")}" placeholder="Deposit, balance, etc.">
-        </label>
-        <button class="ghost-button small" type="button" data-schedule-action="remove">Remove</button>
-    `;
-    els.scheduleRows.appendChild(row);
-}
-
-function handleScheduleRowAction(event) {
-    const button = event.target.closest("[data-schedule-action='remove']");
-    if (!button) return;
-
-    button.closest(".schedule-row").remove();
-    if (!els.scheduleRows.children.length) {
-        els.hasSchedule.checked = false;
-        toggleScheduleBuilder();
-    }
-}
-
-function collectScheduleRows() {
-    if (!els.hasSchedule?.checked || !els.scheduleRows) return [];
-
-    return Array.from(els.scheduleRows.querySelectorAll(".schedule-row"))
-        .map((row) => ({
-            amount: Number(row.querySelector("[name='scheduleAmount']").value || 0),
-            dueDate: row.querySelector("[name='scheduleDueDate']").value,
-            details: row.querySelector("[name='scheduleDetails']").value.trim()
-        }))
-        .filter((item) => item.amount > 0 || item.dueDate || item.details);
-}
-
-function openVendorPayments(vendor) {
-    const payments = state.payments.filter((payment) => payment.vendorId === vendor.id);
-    els.vendorPaymentsTitle.textContent = `${vendor.name || "Vendor"} payments`;
-    els.vendorPaymentHistory.innerHTML = payments.length ? payments.map((payment) => `
-        <article class="payment-card">
-            <div class="card-head">
-                <div>
-                    <h3>${formatDate(payment.date)}</h3>
-                    <span class="meta">${escapeHtml(payment.method || "Payment")}</span>
-                    ${payment.paidBy ? `<span class="meta">Paid by ${escapeHtml(payment.paidBy)}</span>` : ""}
-                </div>
-                <div class="amount">${formatMoney(payment.amount || 0)}</div>
-            </div>
-            ${payment.note ? `<p class="notes">${escapeHtml(payment.note)}</p>` : ""}
-        </article>
-    `).join("") : `<div class="empty-state">No payments recorded for this vendor yet.</div>`;
-    openModal("vendorPaymentsModal");
 }
 
 async function handleVendorAction(event) {
@@ -865,10 +596,6 @@ async function handleVendorAction(event) {
 
     if (button.dataset.action === "edit") {
         openVendorModal(vendor);
-    }
-
-    if (button.dataset.action === "history") {
-        openVendorPayments(vendor);
     }
 
     if (button.dataset.action === "delete") {
@@ -895,6 +622,36 @@ async function handlePaymentAction(event) {
     }
 }
 
+async function handleChecklistAction(event) {
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+
+    if (button.dataset.action === "add-checklist") {
+        openChecklistModal(null, button.dataset.section);
+        return;
+    }
+
+    const item = state.checklistItems.find((entry) => entry.id === button.dataset.id);
+    if (!item) return;
+
+    if (button.dataset.action === "toggle-checklist") {
+        if (!ensureFirebaseReady()) return;
+        try {
+            await firebase.updateDoc(firebase.doc(firebase.db, "checklistItems", item.id), {
+                completed: !item.completed,
+                updatedAt: firebase.serverTimestamp()
+            });
+            showToast(item.completed ? "Task marked as to do" : "Task completed");
+        } catch (error) {
+            showToast(error.message || "Could not update checklist task");
+        }
+    }
+
+    if (button.dataset.action === "edit-checklist") {
+        openChecklistModal(item);
+    }
+}
+
 function ensureFirebaseReady() {
     if (firebase) return true;
     showToast("Firebase is still loading. Try again in a moment.");
@@ -918,92 +675,8 @@ function formatMoney(value) {
     return money.format(Number(value || 0)).replace("MYR", "RM");
 }
 
-function normalizeEvents(items) {
-    const fallbackEvents = [
-        {
-            name: "Engagement Day",
-            icon: "💍",
-            date: "2026-12-19",
-            venue: "Aina's House",
-            time: "8-11pm",
-            startTime: "20:00"
-        },
-        {
-            name: "Nikah Day",
-            icon: "💍✨",
-            date: "2027-04-02",
-            venue: "Lantera Cahaya SPK",
-            time: "7-11pm",
-            startTime: "19:00"
-        },
-        {
-            name: "Majlis Sanding",
-            icon: "🤵‍♂️👰‍♀️",
-            date: "2027-04-03",
-            venue: "Grand Asiana Hall, PJ",
-            time: "11am-4pm",
-            startTime: "11:00"
-        },
-        {
-            name: "Majlis Tandang",
-            icon: "🤵‍♂️👰‍♀️✨",
-            date: "2027-04-11",
-            venue: "Magica Autumn, PICC",
-            time: "11am-4pm",
-            startTime: "11:00"
-        }
-    ];
-    const defaults = state.events.length >= 4 ? state.events : fallbackEvents;
-    const source = Array.isArray(items) ? items : [];
-
-    return Array.from({ length: 4 }, (_, index) => {
-        const event = source[index] || {};
-        const fallback = defaults[index] || defaults[0];
-        return {
-            name: event?.name || fallback.name || `Event ${index + 1}`,
-            icon: event?.icon || fallback.icon || getEventIcon(event?.name || fallback.name),
-            date: isValidDateValue(event?.date) ? event.date : fallback.date,
-            venue: event?.venue || fallback.venue || "",
-            time: event?.time || fallback.time || "",
-            startTime: event?.startTime || fallback.startTime || "00:00"
-        };
-    });
-}
-
-function isValidDateValue(value) {
-    return Boolean(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
-}
-
-function isSameDate(value, date) {
-    if (!isValidDateValue(value)) return false;
-    return value === getLocalDateValue(date);
-}
-
-function getLocalDateValue(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-}
-
-function getEventIcon(name = "") {
-    const normalized = String(name).toLowerCase();
-    if (normalized.includes("engagement")) return "💍";
-    if (normalized.includes("nikah")) return "💍✨";
-    if (normalized.includes("tandang")) return "🤵‍♂️👰‍♀️✨";
-    if (normalized.includes("sanding") || normalized.includes("wedding")) return "🤵‍♂️👰‍♀️";
-    return "✨";
-}
-
-function formatWeekday(value) {
-    if (!isValidDateValue(value)) return "Next event";
-    return new Date(`${value}T00:00:00`).toLocaleDateString("en-MY", {
-        weekday: "long"
-    });
-}
-
 function formatDate(value) {
-    if (!isValidDateValue(value)) return "No date";
+    if (!value) return "No date";
     return new Date(`${value}T00:00:00`).toLocaleDateString("en-MY", {
         day: "2-digit",
         month: "short",
