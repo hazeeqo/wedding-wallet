@@ -407,6 +407,10 @@ function getVendorById(id) {
     return state.vendors.find((vendor) => vendor.id === id);
 }
 
+function categoryClass(category) {
+    return String(category || "Other").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "other";
+}
+
 function getEventDateTime(event) {
     const date = event?.date || getLocalDateValue(new Date());
     const time = event?.startTime || "00:00";
@@ -511,7 +515,7 @@ function renderVendors() {
             : "";
 
         return `
-            <article class="vendor-card">
+            <article class="vendor-card vendor-category-${categoryClass(vendor.category)}">
                 <div class="card-head">
                     <div>
                         <h3 class="vendor-name">${escapeHtml(vendor.name || "Untitled vendor")}</h3>
