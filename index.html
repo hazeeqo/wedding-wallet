@@ -9,17 +9,19 @@
 </head>
 <body>
     <div id="splash" class="splash">
-        <div class="splash-mark">WW</div>
-        <div>
-            <h1>Wedding Wallet</h1>
-            <p>Loading your plans...</p>
+        <div class="splash-orbit" aria-hidden="true"></div>
+        <div class="splash-mark">H&amp;A</div>
+        <div class="splash-copy">
+            <p class="splash-kicker">Wedding Wallet</p>
+            <h1>Haziq &amp; Aina</h1>
+            <p class="splash-quote">"And We created you in pairs" (78:8)</p>
         </div>
     </div>
 
     <main id="app" class="app hidden">
         <header class="app-header">
             <div>
-                <p class="eyebrow">Aiman & Partner</p>
+                <p class="eyebrow">Haziq &amp; Aina</p>
                 <h1>Wedding Wallet</h1>
             </div>
             <button id="quickAddPayment" class="icon-button" type="button" title="Add payment">+</button>
@@ -50,6 +52,29 @@
                     <strong id="savingsSaved">RM 0</strong>
                 </div>
             </div>
+        </section>
+
+        <section class="countdown-panel">
+            <div class="countdown-top">
+                <div>
+                    <span id="eventWeekday">Next event</span>
+                    <h2 id="eventName">Engagement Day</h2>
+                    <p id="eventMeta">Aina's House - 8-11pm</p>
+                </div>
+                <button id="editEventsButton" class="ghost-on-dark" type="button">Edit</button>
+            </div>
+            <div class="countdown-grid">
+                <div>
+                    <strong id="daysLeft">0</strong>
+                    <span>days</span>
+                </div>
+                <div>
+                    <strong id="hoursLeft">0</strong>
+                    <span>hours</span>
+                </div>
+            </div>
+            <input id="eventSlider" class="event-slider" type="range" min="0" max="3" value="0" step="1">
+            <div id="eventDots" class="event-dots"></div>
         </section>
 
         <nav class="tabs" aria-label="App sections">
@@ -134,13 +159,10 @@
 
         <section id="checklistScreen" class="screen">
             <div class="section-head checklist-head">
-                <div>
-                    <h2>Wedding checklist</h2>
-                    <p id="checklistProgress">0 of 0 complete</p>
-                </div>
+                <div><h2>Wedding checklist</h2><p id="checklistProgress">0 of 0 complete</p></div>
                 <button id="addChecklistItemButton" class="primary-button" type="button">Add task</button>
             </div>
-            <div class="checklist-overview" aria-label="Checklist progress">
+            <div class="checklist-overview">
                 <div class="progress-track"><div id="checklistProgressBar" class="progress-fill checklist-progress"></div></div>
                 <span id="checklistProgressText">Your plans, one task at a time.</span>
             </div>
@@ -184,6 +206,17 @@
                 Invoice or quote file
                 <input id="invoiceFile" type="file" accept="image/*,.pdf">
             </label>
+            <label class="checkbox-row">
+                <input id="hasSchedule" type="checkbox">
+                <span>Use scheduled payments</span>
+            </label>
+            <div id="scheduleBuilder" class="schedule-builder hidden">
+                <div class="inline-head">
+                    <strong>Payment schedule</strong>
+                    <button id="addScheduleButton" class="ghost-button small" type="button">Add</button>
+                </div>
+                <div id="scheduleRows" class="schedule-rows"></div>
+            </div>
             <label>
                 Notes
                 <textarea id="vendorNotes" rows="3" placeholder="Package details, contact, or bank info"></textarea>
@@ -225,6 +258,14 @@
                 <input id="receiptFile" type="file" accept="image/*,.pdf">
             </label>
             <label>
+                Paid by
+                <select id="paymentPaidBy">
+                    <option>Haziq</option>
+                    <option>Aina</option>
+                    <option>Both</option>
+                </select>
+            </label>
+            <label>
                 Note
                 <textarea id="paymentNote" rows="2" placeholder="Deposit, second payment, balance, etc."></textarea>
             </label>
@@ -232,37 +273,35 @@
         </form>
     </div>
 
+    <div id="eventsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="eventsModalTitle">
+        <form id="eventsForm" class="modal-sheet">
+            <div class="modal-head">
+                <h2 id="eventsModalTitle">Edit events</h2>
+                <button class="ghost-button" type="button" data-close="eventsModal">Close</button>
+            </div>
+            <div id="eventEditorList" class="event-editor-list"></div>
+            <button class="primary-button full" type="submit">Save events</button>
+        </form>
+    </div>
+
+    <div id="vendorPaymentsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="vendorPaymentsTitle">
+        <div class="modal-sheet">
+            <div class="modal-head">
+                <h2 id="vendorPaymentsTitle">Payment history</h2>
+                <button class="ghost-button" type="button" data-close="vendorPaymentsModal">Close</button>
+            </div>
+            <div id="vendorPaymentHistory" class="list"></div>
+        </div>
+    </div>
+
     <div id="checklistModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="checklistModalTitle">
         <form id="checklistForm" class="modal-sheet">
-            <div class="modal-head">
-                <h2 id="checklistModalTitle">Add checklist task</h2>
-                <button class="ghost-button" type="button" data-close="checklistModal">Close</button>
-            </div>
+            <div class="modal-head"><h2 id="checklistModalTitle">Add checklist task</h2><button class="ghost-button" type="button" data-close="checklistModal">Close</button></div>
             <input id="checklistItemId" type="hidden">
-            <label>
-                Task
-                <input id="checklistTask" required maxlength="120" placeholder="e.g. Find wedding heels">
-            </label>
-            <label>
-                Ceremony
-                <select id="checklistSection">
-                    <option>Nikah</option>
-                    <option>Sanding</option>
-                    <option>Tandang</option>
-                </select>
-            </label>
-            <label>
-                For
-                <select id="checklistOwner">
-                    <option value="Haziq">Haziq</option>
-                    <option value="Aina">Aina</option>
-                    <option value="Haziq & Aina">Haziq & Aina</option>
-                </select>
-            </label>
-            <label>
-                Note <span class="optional">(optional)</span>
-                <textarea id="checklistNote" rows="2" maxlength="240" placeholder="A size, store, deadline, or idea"></textarea>
-            </label>
+            <label>Task<input id="checklistTask" required maxlength="120" placeholder="e.g. Find wedding heels"></label>
+            <label>Ceremony<select id="checklistSection"><option>Nikah</option><option>Sanding</option><option>Tandang</option></select></label>
+            <label>For<select id="checklistOwner"><option value="Haziq">Haziq</option><option value="Aina">Aina</option><option value="Haziq & Aina">Haziq & Aina</option></select></label>
+            <label>Note <span class="optional">(optional)</span><textarea id="checklistNote" rows="2" maxlength="240" placeholder="A size, store, deadline, or idea"></textarea></label>
             <button class="primary-button full" type="submit">Save task</button>
         </form>
     </div>
