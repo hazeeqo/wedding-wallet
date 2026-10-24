@@ -81,6 +81,7 @@
             <button class="tab active" type="button" data-screen="vendorsScreen">Vendors</button>
             <button class="tab" type="button" data-screen="paymentsScreen">Payments</button>
             <button class="tab" type="button" data-screen="checklistScreen">Checklist</button>
+            <button class="tab" type="button" data-screen="statisticsScreen">Statistics</button>
         </nav>
 
         <section id="vendorsScreen" class="screen active">
@@ -167,6 +168,16 @@
             </div>
             <div id="checklistSections" class="checklist-sections"></div>
         </section>
+
+        <section id="statisticsScreen" class="screen" aria-labelledby="statisticsTitle">
+            <div class="section-head">
+                <div>
+                    <h2 id="statisticsTitle">Statistics</h2>
+                    <p>See where the wedding budget is going</p>
+                </div>
+            </div>
+            <div id="statisticsContent" class="statistics-content"></div>
+        </section>
     </main>
 
     <div id="vendorModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="vendorModalTitle">
@@ -191,6 +202,16 @@
                     <option>Makeup</option>
                     <option>Entertainment</option>
                     <option>Other</option>
+                </select>
+            </label>
+            <label>
+                Wedding event
+                <select id="vendorEvent">
+                    <option value="Shared">Shared / unassigned</option>
+                    <option>Engagement</option>
+                    <option>Nikah</option>
+                    <option>Sanding</option>
+                    <option>Tandang</option>
                 </select>
             </label>
             <label>
