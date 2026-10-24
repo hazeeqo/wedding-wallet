@@ -101,6 +101,7 @@ function cacheElements() {
         "vendorId",
         "vendorName",
         "vendorCategory",
+        "vendorEvent",
         "vendorQuote",
         "vendorDueDate",
         "invoiceFile",
@@ -136,6 +137,7 @@ function cacheElements() {
         "checklistProgressBar",
         "checklistProgressText",
         "checklistSections",
+        "statisticsContent",
         "checklistModal",
         "checklistForm",
         "checklistItemId",
@@ -371,7 +373,170 @@ function render() {
     renderPayments();
     renderSavings();
     renderChecklist();
+    renderStatistics();
     fillPaymentVendorOptions();
+}
+
+function renderStatistics() {
+    if (!els.statisticsContent) return;
+
+    if (!state.payments.length) {
+        els.statisticsContent.innerHTML = `<div class="empty-state">Record payments to see your wedding spending trends.</div>`;
+        return;
+    }
+
+    const people = getPersonTotals();
+    const categories = getCategoryTotals();
+        const events = getEventTotals();
+    const months = getMonthlyTotals();
+        const upcoming = getUpcomingPayments();
+    const total = people.Haziq + people.Aina;
+    const personSlices = [
+        { label: "Haziq", value: people.Haziq, color: "#247c75" },
+        { label: "Aina", value: people.Aina, color: "#c45478" }
+    ];
+
+    els.statisticsContent.innerHTML = `
+        <article class="stats-card">
+            <div class="stats-card-head"><div><h3>Who has paid</h3><p>Shared payments are split evenly.</p></div><strong>${formatMoney(total)}</strong></div>
+            ${renderDonut(personSlices, total, "Total paid")}
+        </article>
+        <article class="stats-card">
+            <div class="stats-card-head"><div><h3>Paid by category</h3><p>Based on each vendor's category.</p></div></div>
+            ${renderBreakdown(categories, total)}
+        </article>
+        <article class="stats-card">
+            <div class="stats-card-head"><div><h3>Paid by event</h3><p>Assign an event when editing a vendor.</p></div></div>
+            ${renderBreakdown(events, total)}
+        </article>
+        <article class="stats-card">
+            <div class="stats-card-head"><div><h3>Upcoming payments</h3><p>Scheduled balances and vendor due dates.</p></div></div>
+            ${renderUpcomingPayments(upcoming)}
+        </article>
+        <article class="stats-card">
+            <div class="stats-card-head"><div><h3>Monthly spending</h3><p>Your last six months with payments.</p></div></div>
+            ${renderMonthlyBars(months)}
+        </article>`;
+}
+
+function getPersonTotals() {
+    return state.payments.reduce((totals, payment) => {
+        const amount = Number(payment.amount || 0);
+        if (payment.paidBy === "Aina") totals.Aina += amount;
+        else if (payment.paidBy === "Both") {
+            totals.Haziq += amount / 2;
+            totals.Aina += amount / 2;
+        } else totals.Haziq += amount;
+        return totals;
+    }, { Haziq: 0, Aina: 0 });
+}
+
+function getCategoryTotals() {
+    const totals = state.payments.reduce((result, payment) => {
+        const vendor = getVendorById(payment.vendorId);
+        const category = vendor?.category || "Other";
+        result[category] = (result[category] || 0) + Number(payment.amount || 0);
+        return result;
+    }, {});
+    return Object.entries(totals)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value);
+}
+
+function getEventTotals() {
+    const totals = state.payments.reduce((result, payment) => {
+        const vendor = getVendorById(payment.vendorId);
+        const event = vendor?.event || "Shared";
+        result[event] = (result[event] || 0) + Number(payment.amount || 0);
+        return result;
+    }, {});
+    return Object.entries(totals)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value);
+}
+
+function getUpcomingPayments() {
+    const paidByVendor = getPaidByVendor();
+    return state.vendors.flatMap((vendor) => {
+        const quote = Number(vendor.quote || 0);
+        const paid = Number(paidByVendor[vendor.id] || 0);
+        const balance = Math.max(quote - paid, 0);
+        if (!balance) return [];
+
+        const schedule = Array.isArray(vendor.schedule) ? vendor.schedule : [];
+        let covered = paid;
+        const scheduled = schedule
+            .map((item) => {
+                const amount = Number(item.amount || 0);
+                const remaining = Math.max(amount - Math.min(amount, covered), 0);
+                covered = Math.max(covered - amount, 0);
+                return { vendor: vendor.name || "Untitled vendor", event: vendor.event || "Shared", amount: remaining, date: item.dueDate || "", details: item.details || "" };
+            })
+            .filter((item) => item.amount > 0 && item.date);
+
+        if (scheduled.length) return scheduled;
+        return vendor.dueDate ? [{ vendor: vendor.name || "Untitled vendor", event: vendor.event || "Shared", amount: balance, date: vendor.dueDate, details: "Vendor balance" }] : [];
+    }).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 8);
+}
+
+function getMonthlyTotals() {
+    const totals = state.payments.reduce((result, payment) => {
+        const month = String(payment.date || "").slice(0, 7);
+        if (!/^\d{4}-\d{2}$/.test(month)) return result;
+        result[month] = (result[month] || 0) + Number(payment.amount || 0);
+        return result;
+    }, {});
+    return Object.entries(totals)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-6)
+        .map(([month, value]) => ({ month, value }));
+}
+
+function renderDonut(items, total, label) {
+    const activeItems = items.filter((item) => item.value > 0);
+    if (!total || !activeItems.length) return `<div class="stats-empty">No paid amounts to chart yet.</div>`;
+    let current = 0;
+    const slices = activeItems.map((item) => {
+        const start = current;
+        current += (item.value / total) * 100;
+        return `${item.color} ${start}% ${current}%`;
+    });
+    return `<div class="donut-layout"><div class="donut" style="--chart:conic-gradient(${slices.join(",")})"><div><strong>${formatMoney(total)}</strong><span>${label}</span></div></div>${renderLegend(items, total)}</div>`;
+}
+
+function renderLegend(items, total) {
+    return `<div class="stats-legend">${items.map((item) => {
+        const percent = total ? Math.round((item.value / total) * 100) : 0;
+        return `<div><span class="legend-dot" style="--dot:${item.color || "#247c75"}"></span><span>${escapeHtml(item.label)}</span><strong>${formatMoney(item.value)} · ${percent}%</strong></div>`;
+    }).join("")}</div>`;
+}
+
+function renderBreakdown(items, total) {
+    const colors = ["#247c75", "#c45478", "#7d68b1", "#d28a38", "#4d84b5", "#7c9967", "#a75d91", "#6b7784"];
+    if (!items.length) return `<div class="stats-empty">No category data yet.</div>`;
+    return `<div class="category-breakdown">${items.map((item, index) => {
+        const percent = total ? (item.value / total) * 100 : 0;
+        return `<div class="category-row"><div><span class="legend-dot" style="--dot:${colors[index % colors.length]}"></span><strong>${escapeHtml(item.label)}</strong><span>${formatMoney(item.value)} · ${Math.round(percent)}%</span></div><div class="category-track"><div style="width:${percent}%;background:${colors[index % colors.length]}"></div></div></div>`;
+    }).join("")}</div>`;
+}
+
+function renderMonthlyBars(items) {
+    if (!items.length) return `<div class="stats-empty">No dated payments to chart yet.</div>`;
+    const maximum = Math.max(...items.map((item) => item.value), 1);
+    return `<div class="monthly-bars">${items.map((item) => {
+        const height = Math.max((item.value / maximum) * 100, 5);
+        const label = new Date(`${item.month}-01T00:00:00`).toLocaleDateString("en-MY", { month: "short" });
+        return `<div class="month-bar"><strong>${formatMoney(item.value)}</strong><div class="month-bar-column"><div style="height:${height}%"></div></div><span>${label}</span></div>`;
+    }).join("")}</div>`;
+}
+
+function renderUpcomingPayments(items) {
+    if (!items.length) return `<div class="stats-empty">Add due dates or a payment schedule to see what is coming up.</div>`;
+    const today = getLocalDateValue(new Date());
+    return `<div class="upcoming-list">${items.map((item) => {
+        const isOverdue = item.date < today;
+        return `<div class="upcoming-item ${isOverdue ? "is-overdue" : ""}"><div class="upcoming-date"><strong>${formatDate(item.date)}</strong><span>${isOverdue ? "Overdue" : item.event}</span></div><div><strong>${escapeHtml(item.vendor)}</strong><span>${escapeHtml(item.details || "Payment due")}</span></div><b>${formatMoney(item.amount)}</b></div>`;
+    }).join("")}</div>`;
 }
 
 function renderChecklist() {
@@ -634,6 +799,7 @@ async function saveVendor(event) {
         const data = {
             name: els.vendorName.value.trim(),
             category: els.vendorCategory.value,
+            event: els.vendorEvent.value,
             quote: Number(els.vendorQuote.value || 0),
             dueDate: els.vendorDueDate.value,
             schedule: collectScheduleRows(),
@@ -803,6 +969,7 @@ function openVendorModal(vendor = null) {
     els.vendorId.value = vendor?.id || "";
     els.vendorName.value = vendor?.name || "";
     els.vendorCategory.value = vendor?.category || "Venue";
+    els.vendorEvent.value = vendor?.event || "Shared";
     els.vendorQuote.value = vendor?.quote || "";
     els.vendorDueDate.value = vendor?.dueDate || "";
     els.vendorNotes.value = vendor?.notes || "";
