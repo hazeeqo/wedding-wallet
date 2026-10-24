@@ -463,7 +463,9 @@ function getUpcomingPayments() {
         const balance = Math.max(quote - paid, 0);
         if (!balance) return [];
 
-        const schedule = Array.isArray(vendor.schedule) ? vendor.schedule : [];
+        const schedule = (Array.isArray(vendor.schedule) ? vendor.schedule : [])
+            .slice()
+            .sort((a, b) => String(a.dueDate || "").localeCompare(String(b.dueDate || "")));
         let covered = paid;
         const scheduled = schedule
             .map((item) => {
